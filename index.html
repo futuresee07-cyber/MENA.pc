@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#087f5b">
+  <title>MENA</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<header class="topbar">
+  <button id="menuBtn">☰</button>
+
+  <div class="logo">
+    <div class="logoBox">M</div>
+    <b>MENA</b>
+  </div>
+
+  <button id="settingsBtn">⚙</button>
+</header>
+
+<main id="app"></main>
+
+<nav class="bottomNav">
+
+  <button class="nav active" data-page="home">
+    <span>⌂</span>
+    Home
+  </button>
+
+  <button class="nav" data-page="market">
+    <span>🛍</span>
+    Market
+  </button>
+
+  <button id="createBtn" class="createBtn">
+    +
+  </button>
+
+  <button class="nav" data-page="work">
+    <span>💼</span>
+    Work
+  </button>
+
+  <button class="nav" data-page="profile">
+    <span>👤</span>
+    Profile
+  </button>
+
+</nav>
+
+<div id="modal"></div>
+
+<div id="toast"></div>
+
+<script src="script.js"></script>
+
+</body>
+</html>
