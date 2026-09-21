@@ -1,2738 +1,2225 @@
-const app = document.getElementById("app");
-const modal = document.getElementById("modal");
-const toastBox = document.getElementById("toast");
+/* =========================================================
+   MENA APP — SCRIPT
+   Frontend version
+   ========================================================= */
 
-const STORAGE = "MENA_DATABASE_V2";
+"use strict";
+
+/* -----------------------------
+   APP DATA
+----------------------------- */
+
+const APP = {
+  version: "1.0.0",
+  coinValue: 0.5,
+  withdrawalMinimum: 10,
+  marketPostFee: 100,
+  freeWorkPostFee: 100,
+  giftPlatformPercent: 30,
+  workPlatformPercent: 5
+};
 
 const gifts = [
-  ["🌹","Rose",1],
-  ["❤️","Heart",5],
-  ["☕","Coffee",10],
-  ["🍫","Chocolate",25],
-  ["🌟","Star",50],
-  ["🎁","Gift",100],
-  ["💎","Diamond",250],
-  ["👑","Crown",500],
-  ["🚀","Rocket",750],
-  ["💐","Bouquet",1000],
-  ["🦋","Butterfly",1500],
-  ["💚","Green Heart",2000],
-  ["🎉","Party",3000],
-  ["🏆","Trophy",4000],
-  ["💰","Money",5000],
-  ["💍","Ring",6000],
-  ["🛍️","Shopping",7000],
-  ["🌈","Rainbow",8000],
-  ["🔥","Fire",9000],
-  ["🐯","Tiger",10000],
-  ["🦁","Lion",11000],
-  ["🐉","Dragon",12000],
-  ["⚡","Lightning",14000],
-  ["🌍","World",16000],
-  ["🪐","Planet",18000],
-  ["💫","Galaxy",20000],
-  ["🏰","Castle",22000],
-  ["🪽","Wings",24000],
-  ["💎","Royal Diamond",25000],
-  ["👑","MENA Crown",27000]
+  ["🌹", "Rose", 1],
+  ["❤️", "Heart", 5],
+  ["👍", "Like", 10],
+  ["🔥", "Fire", 25],
+  ["⭐", "Star", 50],
+  ["💎", "Diamond", 100],
+  ["🎁", "Gift", 250],
+  ["☕", "Coffee", 500],
+  ["🍫", "Chocolate", 750],
+  ["🌸", "Flower", 1000],
+  ["🦋", "Butterfly", 1500],
+  ["🎈", "Balloon", 2000],
+  ["🎂", "Cake", 2500],
+  ["💐", "Flowers", 3000],
+  ["👑", "Crown", 4000],
+  ["🚀", "Rocket", 5000],
+  ["🏆", "Trophy", 6000],
+  ["💰", "Money", 7500],
+  ["💍", "Ring", 8500],
+  ["🎵", "Music", 10000],
+  ["🛍️", "Shopping", 12000],
+  ["🏎️", "Super Car", 14000],
+  ["✈️", "Private Jet", 16000],
+  ["🏠", "House", 18000],
+  ["💎", "Big Diamond", 20000],
+  ["🌍", "World", 22000],
+  ["👑", "Royal Crown", 24000],
+  ["🪙", "Gold", 25000],
+  ["🚁", "Helicopter", 26000],
+  ["🏰", "Castle", 27000]
 ];
 
-let database = JSON.parse(
-  localStorage.getItem(STORAGE) ||
-  JSON.stringify({
-    user:null,
-    posts:[],
-    streams:[],
-    work:[],
-    wallet:{
-      telebirr:null,
-      mpesa:null
-    },
-    coins:0,
-    balance:0,
-    notifications:[]
-  })
-);
+/* -----------------------------
+   DATABASE
+----------------------------- */
 
-let currentPage = "home";
-let selectedMedia = "";
-let cameraStream = null;
+const STORAGE_KEY = "MENA_DATABASE_V3";
 
-function save(){
-  localStorage.setItem(STORAGE,JSON.stringify(database));
+let database = {
+  user: null,
+
+  users: [],
+
+  posts: [],
+
+  streams: [],
+
+  market: [],
+
+  work: [],
+
+  notifications: [],
+
+  wallet: {
+    provider: null,
+    number: "",
+    name: "",
+    connected: false
+  },
+
+  balance: 0,
+
+  coins: 0
+};
+
+/* -----------------------------
+   LOAD DATABASE
+----------------------------- */
+
+function loadDatabase() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+
+    if (saved) {
+      const parsed = JSON.parse(saved);
+
+      database = {
+        ...database,
+        ...parsed,
+        wallet: {
+          ...database.wallet,
+          ...(parsed.wallet || {})
+        }
+      };
+    }
+  } catch (error) {
+    console.error("Database loading error:", error);
+  }
 }
 
-function showToast(message){
-  toastBox.textContent = message;
-  toastBox.classList.add("show");
+/* -----------------------------
+   SAVE DATABASE
+----------------------------- */
 
-  setTimeout(()=>{
-    toastBox.classList.remove("show");
-  },2200);
-}
-
-function escapeHTML(text=""){
-  return text
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;")
-    .replaceAll("'","&#039;");
-}
-
-function money(number){
-  return Number(number || 0).toLocaleString()+" ETB";
-}
-
-function avatar(){
-
-  if(database.user?.photo){
-    return database.user.photo;
-  }
-
-  return "data:image/svg+xml;charset=UTF-8,"+
-    encodeURIComponent(`
-      <svg xmlns="http://www.w3.org/2000/svg"
-      width="100" height="100">
-      <rect width="100" height="100"
-      fill="#dcebe5"/>
-      <text x="50" y="62"
-      text-anchor="middle"
-      font-size="42"
-      fill="#087f5b">
-      ${database.user?.name?.[0] || "M"}
-      </text>
-      </svg>
-    `);
-}
-
-function render(){
-
-  if(currentPage==="home"){
-    home();
-  }
-
-  if(currentPage==="market"){
-    market();
-  }
-
-  if(currentPage==="work"){
-    work();
-  }
-
-  if(currentPage==="profile"){
-    profile();
-  }
-
-  document.querySelectorAll(".nav").forEach(btn=>{
-    btn.classList.toggle(
-      "active",
-      btn.dataset.page===currentPage
+function saveDatabase() {
+  try {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(database)
     );
+  } catch (error) {
+    console.error("Database saving error:", error);
+  }
+}
+
+/* -----------------------------
+   HELPERS
+----------------------------- */
+
+function $(id) {
+  return document.getElementById(id);
+}
+
+function qs(selector) {
+  return document.querySelector(selector);
+}
+
+function qsa(selector) {
+  return [...document.querySelectorAll(selector)];
+}
+
+function escapeHTML(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function uid(prefix = "id") {
+  return (
+    prefix +
+    "_" +
+    Date.now().toString(36) +
+    "_" +
+    Math.random().toString(36).slice(2, 8)
+  );
+}
+
+function money(value) {
+  return Number(value || 0).toFixed(2);
+}
+
+function showMessage(message) {
+  alert(message);
+}
+
+function getCurrentUser() {
+  return database.user;
+}
+
+/* -----------------------------
+   INITIALIZATION
+----------------------------- */
+
+document.addEventListener("DOMContentLoaded", () => {
+  loadDatabase();
+  initializeApp();
+});
+
+function initializeApp() {
+  setupNavigation();
+  setupButtons();
+  renderHome();
+  renderProfile();
+  renderMarket();
+  renderWork();
+  updateWalletUI();
+}
+
+/* =========================================================
+   NAVIGATION
+========================================================= */
+
+function setupNavigation() {
+
+  const homeBtn = $("homeBtn");
+  const marketBtn = $("marketBtn");
+  const workBtn = $("workBtn");
+  const profileBtn = $("profileBtn");
+  const addBtn = $("addBtn");
+  const settingsBtn = $("settingsBtn");
+  const searchBtn = $("searchBtn");
+
+  if (homeBtn) {
+    homeBtn.addEventListener("click", () => showPage("homePage"));
+  }
+
+  if (marketBtn) {
+    marketBtn.addEventListener("click", () => showPage("marketPage"));
+  }
+
+  if (workBtn) {
+    workBtn.addEventListener("click", () => showPage("workPage"));
+  }
+
+  if (profileBtn) {
+    profileBtn.addEventListener("click", () => showPage("profilePage"));
+  }
+
+  if (addBtn) {
+    addBtn.addEventListener("click", openCreateMenu);
+  }
+
+  if (settingsBtn) {
+    settingsBtn.addEventListener("click", openSettings);
+  }
+
+  if (searchBtn) {
+    searchBtn.addEventListener("click", openSearch);
+  }
+}
+
+function showPage(pageId) {
+
+  qsa(".page").forEach(page => {
+    page.classList.remove("active");
+  });
+
+  const page = $(pageId);
+
+  if (page) {
+    page.classList.add("active");
+  }
+
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth"
   });
 }
 
-/* HOME */
+/* =========================================================
+   BUTTON SETUP
+========================================================= */
 
-function home(){
+function setupButtons() {
 
-  app.innerHTML=`
+  document.addEventListener("click", event => {
 
-    <div class="search">
-      <input id="searchInput"
-      placeholder="Search people, posts and work...">
+    const button = event.target.closest("[data-action]");
 
-      <button class="primary"
-      id="searchBtn">
-      Search
-      </button>
-    </div>
+    if (!button) return;
 
-    ${
-      !database.user
-      ?
-      `<div class="notice">
-      Sign up to post, stream, send gifts,
-      use wallet and interact with real users.
-      MENA never inserts fake users or fake posts.
-      </div>`
-      :""
+    const action = button.dataset.action;
+    const id = button.dataset.id;
+
+    switch (action) {
+
+      case "like":
+        likePost(id);
+        break;
+
+      case "comment":
+        commentPost(id);
+        break;
+
+      case "share":
+        sharePost(id);
+        break;
+
+      case "follow":
+        followUser(id);
+        break;
+
+      case "gift":
+        openGiftMenu(id);
+        break;
+
+      case "stream":
+        openStream(id);
+        break;
+
+      case "buyCoins":
+        openCoinShop();
+        break;
+
+      case "deposit":
+        openDeposit();
+        break;
+
+      case "withdraw":
+        openWithdraw();
+        break;
+
+      case "wallet":
+        openWallet();
+        break;
+
+      case "editProfile":
+        editProfile();
+        break;
+
+      case "logout":
+        logout();
+        break;
+
+      case "signup":
+        openSignup();
+        break;
+
+      case "login":
+        openLogin();
+        break;
     }
-
-    <div class="section">
-      <h2>Stories</h2>
-      <button id="storyBtn">
-      ${database.user ? "Your story" : "Sign up"}
-      </button>
-    </div>
-
-    <div class="card">
-      ${
-        database.user
-        ?
-        `<div class="profileTop">
-          <img class="avatar" src="${avatar()}">
-          <div>
-            <b>${escapeHTML(database.user.name)}</b>
-            <div>${escapeHTML(database.user.username)}</div>
-          </div>
-        </div>`
-        :
-        `<div class="empty">
-          <h3>No stories yet</h3>
-          <p>Real users can create stories.</p>
-        </div>`
-      }
-    </div>
-
-    <div class="section">
-      <h2>Live Now</h2>
-      <button id="liveBtn">Go Live</button>
-    </div>
-
-    <div class="liveRow">
-
-      ${
-        database.streams.length
-        ?
-        database.streams.map(stream=>`
-
-          <div class="liveCard">
-
-            <span class="liveTag">
-            ● LIVE
-            </span>
-
-            <h3>
-            ${escapeHTML(stream.name)}
-            </h3>
-
-            <p>
-            ${escapeHTML(stream.title)}
-            </p>
-
-            <button
-            onclick="openStream('${stream.id}')">
-            Open Stream
-            </button>
-
-          </div>
-
-        `).join("")
-        :
-        `<div class="empty" style="min-width:100%">
-          <h3>No one is live</h3>
-          <p>
-          MENA does not create fake live users.
-          </p>
-        </div>`
-      }
-
-    </div>
-
-    <div class="section">
-      <h2>For You</h2>
-      <button onclick="render()">Refresh</button>
-    </div>
-
-    ${
-      database.posts.length
-      ?
-      database.posts.map(postCard).join("")
-      :
-      `<div class="empty">
-
-        <h3>Your feed is empty</h3>
-
-        <p>
-        Real posts will appear here after users
-        upload them.
-        </p>
-
-      </div>`
-    }
-
-  `;
-
-  document.getElementById("liveBtn")
-    ?.addEventListener("click",streamPage);
-
-  document.getElementById("storyBtn")
-    ?.addEventListener("click",()=>{
-      if(!database.user){
-        signup();
-      }else{
-        createPost("photo");
-      }
-    });
+  });
 }
 
-function postCard(post){
+/* =========================================================
+   SIGN UP
+========================================================= */
 
-  return `
+function openSignup() {
 
-  <article class="post">
+  const name = prompt("Enter your name:");
 
-    <div class="postHeader">
+  if (!name) return;
 
-      <img class="avatar"
-      src="${post.photo || avatar()}">
+  const username = prompt("Choose your username:");
 
-      <div style="flex:1">
+  if (!username) return;
 
-        <b>
-        ${escapeHTML(post.author)}
-        </b>
+  const phone = prompt("Enter your phone number:");
 
-        <div style="font-size:11px;color:#71807a">
-        ${new Date(post.date).toLocaleString()}
-        </div>
+  if (!phone) return;
 
-      </div>
+  const accountType = prompt(
+    "Choose account type:\n\n1 = Personal\n2 = Business"
+  );
 
-    </div>
+  const type =
+    accountType === "2"
+      ? "business"
+      : "personal";
 
-    ${
-      post.media
-      ?
-      post.type==="video"
-      ?
-      `<video
-      class="postMedia"
-      controls
-      src="${post.media}">
-      </video>`
-      :
-      `<img
-      class="postMedia"
-      src="${post.media}">
-      `
-      :
-      ""
-    }
+  const user = {
+    id: uid("user"),
+    name: name.trim(),
+    username: username.trim().replace(/\s+/g, ""),
+    phone: phone.trim(),
+    accountType: type,
+    bio: "",
+    avatar: "",
+    followers: 0,
+    following: 0,
+    posts: 0,
+    createdAt: new Date().toISOString()
+  };
 
-    ${
-      post.text
-      ?
-      `<div class="postText">
-      ${escapeHTML(post.text)}
-      </div>`
-      :""
-    }
+  database.user = user;
+  database.users.push(user);
 
-    <div class="postActions">
+  database.balance = 0;
+  database.coins = 0;
 
-      <button onclick="likePost('${post.id}')">
-      ❤️ ${post.likes || 0}
-      </button>
+  saveDatabase();
 
-      <button onclick="comments('${post.id}')">
-      💬 ${post.comments?.length || 0}
-      </button>
+  showMessage("MENA account created successfully.");
 
-      <button onclick="sharePost('${post.id}')">
-      ↗ Share
-      </button>
-
-      <button onclick="giftPost('${post.id}')">
-      🎁 Gift
-      </button>
-
-      <button onclick="followUser('${post.author}')">
-      + Follow
-      </button>
-
-    </div>
-
-  </article>
-
-  `;
+  renderProfile();
+  renderHome();
 }
 
-/* MARKET */
+/* =========================================================
+   LOGIN
+========================================================= */
 
-function market(){
+function openLogin() {
 
-  const listings =
-    database.posts.filter(x=>x.market);
+  if (database.user) {
+    showMessage(
+      `You are already logged in as @${database.user.username}`
+    );
+    return;
+  }
 
-  app.innerHTML=`
+  const username = prompt("Enter your username:");
 
-    <div class="section">
-      <h2>Marketplace</h2>
+  if (!username) return;
 
-      <button onclick="marketPost()">
-      + Sell
-      </button>
-    </div>
+  const found = database.users.find(
+    user =>
+      user.username.toLowerCase() ===
+      username.toLowerCase()
+  );
 
-    <div class="notice">
-      Only real user listings appear here.
-      There are no automatically generated products.
-      Marketplace posting requires a 100 ETB listing fee
-      in the production payment system.
-    </div>
+  if (!found) {
+    showMessage(
+      "Account not found on this device. Please create an account first."
+    );
+    return;
+  }
 
-    ${
-      listings.length
-      ?
-      listings.map(postCard).join("")
-      :
-      `<div class="empty">
+  database.user = found;
 
-      <h3>Marketplace is empty</h3>
+  saveDatabase();
 
-      <p>
-      Be the first real seller.
-      </p>
+  showMessage("Welcome back to MENA.");
 
-      </div>`
-    }
-
-  `;
+  renderProfile();
+  renderHome();
 }
 
-/* FREE WORK */
+/* =========================================================
+   LOGOUT
+========================================================= */
 
-function work(){
+function logout() {
 
-  app.innerHTML=`
+  if (!confirm("Log out of this MENA account?")) {
+    return;
+  }
 
-    <div class="section">
-      <h2>Free Work</h2>
+  database.user = null;
 
-      <button onclick="freeWork()">
-      + Post Work
-      </button>
-    </div>
+  saveDatabase();
 
-    <div class="notice">
-      Posting a Free Work opportunity costs
-      100 ETB. Platform material fee:
-      5% as configured by the platform.
-    </div>
+  showMessage("You have been logged out.");
 
-    ${
-      database.work.length
-      ?
-      database.work.map(item=>`
-
-        <div class="card">
-
-          <div class="profileTop">
-
-            <img
-            class="avatar"
-            src="${item.photo || avatar()}">
-
-            <div>
-              <b>
-              ${escapeHTML(item.author)}
-              </b>
-
-              <div>
-              ${new Date(item.date).toLocaleString()}
-              </div>
-            </div>
-
-          </div>
-
-          ${
-            item.media
-            ?
-            `<img class="preview"
-            src="${item.media}">`
-            :""
-          }
-
-          <h3>
-          ${escapeHTML(item.title)}
-          </h3>
-
-          <p>
-          ${escapeHTML(item.description)}
-          </p>
-
-          <p>
-          Material amount:
-          <b>${money(item.amount)}</b>
-          </p>
-
-          <button
-          class="secondary"
-          onclick="contactWork()">
-          Contact Employer
-          </button>
-
-        </div>
-
-      `).join("")
-      :
-      `<div class="empty">
-
-        <h3>No Free Work yet</h3>
-
-        <p>
-        Real employers can publish opportunities here.
-        </p>
-
-      </div>`
-    }
-
-  `;
+  renderProfile();
 }
 
-/* PROFILE */
+/* =========================================================
+   PROFILE
+========================================================= */
 
-function profile(){
+function renderProfile() {
 
-  if(!database.user){
+  const user = getCurrentUser();
 
-    app.innerHTML=`
+  const name = $("profileName");
+  const username = $("profileUsername");
+  const avatar = $("profileAvatar");
+  const balance = $("profileBalance");
+  const coins = $("profileCoins");
 
-      <div class="card">
+  if (!user) {
 
-        <h2>Welcome to MENA</h2>
+    if (name) name.textContent = "Guest";
+    if (username) username.textContent = "Create an account";
+    if (balance) balance.textContent = "0 ETB";
+    if (coins) coins.textContent = "0";
 
-        <p>
-        Create your real account to use
-        profile, wallet, posting and streaming.
-        </p>
+    return;
+  }
 
-        <button
-        class="primary"
-        onclick="signup()">
-        Sign Up
+  if (name) {
+    name.textContent = user.name;
+  }
+
+  if (username) {
+    username.textContent =
+      "@" + user.username;
+  }
+
+  if (avatar) {
+
+    if (user.avatar) {
+      avatar.src = user.avatar;
+    }
+  }
+
+  if (balance) {
+    balance.textContent =
+      money(database.balance) + " ETB";
+  }
+
+  if (coins) {
+    coins.textContent =
+      database.coins;
+  }
+}
+
+/* =========================================================
+   EDIT PROFILE
+========================================================= */
+
+function editProfile() {
+
+  if (!database.user) {
+    openSignup();
+    return;
+  }
+
+  const name = prompt(
+    "New name:",
+    database.user.name
+  );
+
+  if (name) {
+    database.user.name = name.trim();
+  }
+
+  const username = prompt(
+    "New username:",
+    database.user.username
+  );
+
+  if (username) {
+    database.user.username =
+      username.trim().replace(/\s+/g, "");
+  }
+
+  const bio = prompt(
+    "Bio:",
+    database.user.bio || ""
+  );
+
+  if (bio !== null) {
+    database.user.bio = bio;
+  }
+
+  saveDatabase();
+
+  renderProfile();
+
+  showMessage("Profile updated.");
+}
+
+/* =========================================================
+   PROFILE PHOTO
+========================================================= */
+
+function changeProfilePhoto() {
+
+  if (!database.user) {
+    openSignup();
+    return;
+  }
+
+  const input = document.createElement("input");
+
+  input.type = "file";
+  input.accept = "image/*";
+  input.capture = "user";
+
+  input.onchange = event => {
+
+    const file = event.target.files[0];
+
+    if (!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+
+      database.user.avatar = reader.result;
+
+      saveDatabase();
+
+      renderProfile();
+
+      showMessage(
+        "Profile picture updated."
+      );
+    };
+
+    reader.readAsDataURL(file);
+  };
+
+  input.click();
+}
+
+/* =========================================================
+   CREATE MENU
+========================================================= */
+
+function openCreateMenu() {
+
+  const choice = prompt(
+    "MENA CREATE\n\n" +
+    "1 = Photo / Video Post\n" +
+    "2 = Start Streaming\n" +
+    "3 = Marketplace Post\n" +
+    "4 = Free Work Post"
+  );
+
+  switch (choice) {
+
+    case "1":
+      createPost();
+      break;
+
+    case "2":
+      createStream();
+      break;
+
+    case "3":
+      createMarketPost();
+      break;
+
+    case "4":
+      createWorkPost();
+      break;
+  }
+}
+
+/* =========================================================
+   CREATE POST
+========================================================= */
+
+function createPost() {
+
+  if (!database.user) {
+    openSignup();
+    return;
+  }
+
+  const caption = prompt(
+    "Write your post caption:"
+  );
+
+  if (caption === null) return;
+
+  const input = document.createElement("input");
+
+  input.type = "file";
+  input.accept =
+    "image/*,video/*";
+
+  input.capture = "environment";
+
+  input.onchange = event => {
+
+    const file = event.target.files[0];
+
+    if (!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+
+      const post = {
+        id: uid("post"),
+        userId: database.user.id,
+        username: database.user.username,
+        name: database.user.name,
+        avatar: database.user.avatar || "",
+        caption,
+        media: reader.result,
+        mediaType:
+          file.type.startsWith("video")
+            ? "video"
+            : "image",
+        likes: 0,
+        comments: [],
+        shares: 0,
+        followers: [],
+        createdAt: new Date().toISOString()
+      };
+
+      database.posts.unshift(post);
+
+      database.user.posts =
+        (database.user.posts || 0) + 1;
+
+      saveDatabase();
+
+      renderHome();
+
+      showMessage(
+        "Your post was created."
+      );
+    };
+
+    reader.readAsDataURL(file);
+  };
+
+  input.click();
+}
+
+/* =========================================================
+   HOME FEED
+========================================================= */
+
+function renderHome() {
+
+  const container = $("feed");
+
+  if (!container) return;
+
+  if (!database.posts.length) {
+
+    container.innerHTML = `
+      <div class="empty-state">
+        <h3>Welcome to MENA</h3>
+        <p>No posts yet.</p>
+        <button onclick="createPost()">
+          Create your first post
         </button>
-
       </div>
-
     `;
 
     return;
   }
 
-  app.innerHTML=`
+  container.innerHTML =
+    database.posts
+      .map(renderPost)
+      .join("");
+}
 
-    <div class="card">
+function renderPost(post) {
 
-      <div class="profileTop">
-
+  const media =
+    post.mediaType === "video"
+      ? `
+        <video
+          class="post-media"
+          controls
+          playsinline
+          src="${post.media}">
+        </video>
+      `
+      : `
         <img
-        class="profilePhoto"
-        src="${avatar()}">
+          class="post-media"
+          src="${post.media}"
+          alt="MENA post">
+      `;
 
-        <div>
+  const comments =
+    (post.comments || [])
+      .slice(-3)
+      .map(comment => `
+        <div class="comment">
+          <b>${escapeHTML(comment.name)}</b>
+          <span>${escapeHTML(comment.text)}</span>
+        </div>
+      `)
+      .join("");
 
-          <h2 style="margin:0">
-          ${escapeHTML(database.user.name)}
-          </h2>
+  return `
+    <article class="post-card">
 
-          <p>
-          ${escapeHTML(database.user.username)}
-          </p>
+      <div class="post-header">
+
+        <div class="post-user">
+
+          <div class="avatar">
+            ${
+              post.avatar
+                ? `<img src="${post.avatar}">`
+                : "M"
+            }
+          </div>
+
+          <div>
+            <strong>
+              ${escapeHTML(post.name)}
+            </strong>
+
+            <small>
+              @${escapeHTML(post.username)}
+            </small>
+          </div>
+
+        </div>
+
+        <button
+          data-action="follow"
+          data-id="${post.userId}">
+          Follow
+        </button>
+
+      </div>
+
+      ${media}
+
+      <div class="post-content">
+
+        <p>
+          ${escapeHTML(post.caption)}
+        </p>
+
+        <div class="post-actions">
 
           <button
-          class="secondary"
-          onclick="editProfile()">
-          Edit Profile
+            data-action="like"
+            data-id="${post.id}">
+            ❤️ ${post.likes}
+          </button>
+
+          <button
+            data-action="comment"
+            data-id="${post.id}">
+            💬 ${post.comments.length}
+          </button>
+
+          <button
+            data-action="share"
+            data-id="${post.id}">
+            ↗️ ${post.shares}
+          </button>
+
+          <button
+            data-action="gift"
+            data-id="${post.id}">
+            🎁 Gift
           </button>
 
         </div>
 
-      </div>
-
-      <div class="stats">
-
-        <div class="stat">
-          <b>
-          ${database.posts.filter(
-            x=>x.author===database.user.name
-          ).length}
-          </b>
-          Posts
-        </div>
-
-        <div class="stat">
-          <b>
-          ${database.streams.filter(
-            x=>x.name===database.user.name
-          ).length}
-          </b>
-          Lives
-        </div>
-
-        <div class="stat">
-          <b>
-          ${database.coins.toLocaleString()}
-          </b>
-          Coins
+        <div class="comments">
+          ${comments}
         </div>
 
       </div>
 
-    </div>
-
-    <div class="card">
-
-      <h2>Wallet</h2>
-
-      <div class="walletBalance">
-      ${money(database.balance)}
-      </div>
-
-      <p class="coin">
-      🪙 ${database.coins.toLocaleString()} coins
-      </p>
-
-      <div class="grid">
-
-        <button
-        class="primary"
-        onclick="deposit()">
-        Deposit
-        </button>
-
-        <button
-        class="secondary"
-        onclick="withdraw()">
-        Withdraw
-        </button>
-
-      </div>
-
-      <button
-      class="secondary"
-      style="width:100%;margin-top:10px"
-      onclick="coinShop()">
-      🪙 Shop Coins
-      </button>
-
-    </div>
-
-    <div class="card">
-
-      <h3>Account Settings</h3>
-
-      <button
-      class="secondary"
-      style="width:100%;margin:5px 0"
-      onclick="walletConnect()">
-      💳 Connect Telebirr / M-Pesa
-      </button>
-
-      <button
-      class="secondary"
-      style="width:100%;margin:5px 0"
-      onclick="signup()">
-      🔄 Switch Account
-      </button>
-
-      <button
-      class="danger"
-      style="width:100%;margin:5px 0"
-      onclick="logout()">
-      Logout
-      </button>
-
-    </div>
-
+    </article>
   `;
 }
 
-/* ACCOUNT */
+/* =========================================================
+   LIKE
+========================================================= */
 
-function signup(){
+function likePost(postId) {
 
-  openModal(
-    "Choose Account",
-    `
+  const post =
+    database.posts.find(
+      p => p.id === postId
+    );
 
-    <div class="notice">
-    Production authentication should use a secure backend.
-    This browser version creates a local test account only.
-    </div>
+  if (!post) return;
 
-    <div class="choiceGrid">
+  post.likes++;
 
-      <button class="choice"
-      onclick="signupForm('Personal')">
+  saveDatabase();
 
-      <span>👤</span>
-      Personal Account
-
-      </button>
-
-      <button class="choice"
-      onclick="signupForm('Creator')">
-
-      <span>🎥</span>
-      Creator Account
-
-      </button>
-
-    </div>
-
-    `
-  );
+  renderHome();
 }
 
-function signupForm(type){
+/* =========================================================
+   COMMENT
+========================================================= */
 
-  openModal(
-    "Create "+type+" Account",
+function commentPost(postId) {
 
-    `
+  const post =
+    database.posts.find(
+      p => p.id === postId
+    );
 
-    <div class="formGroup">
-    <label>Full Name</label>
-    <input id="signupName">
-    </div>
+  if (!post) return;
 
-    <div class="formGroup">
-    <label>Username</label>
-    <input id="signupUsername"
-    placeholder="@username">
-    </div>
-
-    <div class="formGroup">
-    <label>Phone or Email</label>
-    <input id="signupLogin">
-    </div>
-
-    <div class="formGroup">
-    <label>Password</label>
-    <input id="signupPassword"
-    type="password">
-    </div>
-
-    <button
-    class="primary"
-    style="width:100%"
-    onclick="createAccount('${type}')">
-
-    Create Account
-
-    </button>
-
-    `
-  );
-}
-
-function createAccount(type){
-
-  const name =
-    document.getElementById("signupName").value.trim();
-
-  const username =
-    document.getElementById("signupUsername").value.trim();
-
-  const login =
-    document.getElementById("signupLogin").value.trim();
-
-  const password =
-    document.getElementById("signupPassword").value;
-
-  if(!name || !username || !login){
-    showToast("Complete all fields.");
+  if (!database.user) {
+    openSignup();
     return;
   }
 
-  if(password.length<8){
-    showToast("Password must contain at least 8 characters.");
-    return;
-  }
-
-  database.user={
-    name,
-    username:username.startsWith("@")
-      ? username
-      : "@"+username,
-    login,
-    type,
-    photo:null
-  };
-
-  save();
-  closeModal();
-  currentPage="profile";
-  render();
-
-  showToast("Account created.");
-}
-
-/* CREATE */
-
-function createMenu(){
-
-  if(!database.user){
-    signup();
-    return;
-  }
-
-  openModal(
-    "Create",
-    `
-
-    <div class="choiceGrid">
-
-      <button class="choice"
-      onclick="createPost('video')">
-      <span>🎥</span>
-      Video Post
-      </button>
-
-      <button class="choice"
-      onclick="createPost('photo')">
-      <span>📷</span>
-      Photo Post
-      </button>
-
-      <button class="choice"
-      onclick="streamPage()">
-      <span>🔴</span>
-      Start Stream
-      </button>
-
-      <button class="choice"
-      onclick="freeWork()">
-      <span>💼</span>
-      Free Work
-      </button>
-
-    </div>
-
-    `
-  );
-}
-
-/* CAMERA + GALLERY */
-
-function createPost(type){
-
-  if(!database.user){
-    signup();
-    return;
-  }
-
-  openModal(
-    type==="video"
-      ?"Create Video Post"
-      :"Create Photo Post",
-
-    `
-
-    <div class="choiceGrid">
-
-      <button
-      class="choice"
-      onclick="chooseCamera('${type}')">
-
-      <span>📸</span>
-      Camera
-
-      </button>
-
-      <button
-      class="choice"
-      onclick="chooseGallery('${type}')">
-
-      <span>🖼️</span>
-      Gallery
-
-      </button>
-
-    </div>
-
-    <input
-    id="mediaInput"
-    class="fileInput"
-    type="file"
-    accept="${type==="video"?"video/*":"image/*"}">
-
-    <div id="mediaEditor"></div>
-
-    `
+  const text = prompt(
+    "Write your comment:"
   );
 
-  document.getElementById("mediaInput")
-    .onchange=e=>{
-      const file=e.target.files[0];
+  if (!text) return;
 
-      if(!file)return;
-
-      const reader=new FileReader();
-
-      reader.onload=()=>{
-        selectedMedia=reader.result;
-        mediaEditor(type);
-      };
-
-      reader.readAsDataURL(file);
-    };
-}
-
-function chooseCamera(type){
-
-  const input=document.getElementById("mediaInput");
-
-  input.setAttribute(
-    "capture",
-    type==="video"
-      ?"environment"
-      :"environment"
-  );
-
-  input.click();
-}
-
-function chooseGallery(){
-
-  document.getElementById("mediaInput")
-    .removeAttribute("capture");
-
-  document.getElementById("mediaInput").click();
-}
-
-function mediaEditor(type){
-
-  document.getElementById("mediaEditor").innerHTML=`
-
-    ${
-      type==="photo"
-      ?
-      `<div class="filterRow">
-
-        <button onclick="filterMedia('')">
-        Normal
-        </button>
-
-        <button onclick="filterMedia('blackFilter')">
-        Black
-        </button>
-
-        <button onclick="filterMedia('bichFilter')">
-        Bich
-        </button>
-
-        <button onclick="filterMedia('bwFilter')">
-        B&W
-        </button>
-
-      </div>`
-      :""
-    }
-
-    ${
-      type==="video"
-      ?
-      `<video
-      id="mediaPreview"
-      class="preview"
-      controls
-      src="${selectedMedia}">
-      </video>`
-      :
-      `<img
-      id="mediaPreview"
-      class="preview"
-      src="${selectedMedia}">
-      `
-    }
-
-    <div class="formGroup">
-
-      <label>Caption</label>
-
-      <textarea
-      id="caption"
-      placeholder="Write something...">
-      </textarea>
-
-    </div>
-
-    <button
-    class="primary"
-    style="width:100%"
-    onclick="publishPost('${type}')">
-
-    Post Now
-
-    </button>
-
-  `;
-}
-
-function filterMedia(filter){
-
-  document.getElementById("mediaPreview")
-    .className="preview "+filter;
-}
-
-function publishPost(type){
-
-  const text =
-    document.getElementById("caption")
-      .value.trim();
-
-  database.posts.unshift({
-
-    id:Date.now().toString(),
-
-    author:database.user.name,
-
-    username:database.user.username,
-
-    photo:database.user.photo,
-
-    type,
-
-    media:selectedMedia,
-
-    text,
-
-    likes:0,
-
-    comments:[],
-
-    date:Date.now()
-
+  post.comments.push({
+    id: uid("comment"),
+    userId: database.user.id,
+    name: database.user.name,
+    text: text.trim(),
+    createdAt: new Date().toISOString()
   });
 
-  save();
+  saveDatabase();
 
-  closeModal();
-
-  currentPage="home";
-
-  render();
-
-  showToast("Post published.");
+  renderHome();
 }
 
-/* STREAM */
+/* =========================================================
+   SHARE
+========================================================= */
 
-async function streamPage(){
+async function sharePost(postId) {
 
-  if(!database.user){
-    signup();
-    return;
-  }
+  const post =
+    database.posts.find(
+      p => p.id === postId
+    );
 
-  openModal(
-    "Start Live Stream",
+  if (!post) return;
 
-    `
+  post.shares++;
 
-    <div class="formGroup">
-    <label>Stream Name</label>
-    <input id="streamName"
-    placeholder="What are you streaming?">
-    </div>
+  saveDatabase();
 
-    <div class="formGroup">
-    <label>Group Chat Name</label>
-    <input id="groupName"
-    placeholder="MENA Live Chat">
-    </div>
+  const shareText =
+    `Check this post on MENA: ${post.caption}`;
 
-    <video
-    id="cameraPreview"
-    class="streamVideo"
-    autoplay
-    muted
-    playsinline>
-    </video>
+  if (navigator.share) {
 
-    <div class="chat">
+    try {
 
-      🔒 Camera preview is private
-      until a real streaming server is connected.
-
-    </div>
-
-    <div class="grid">
-
-      <button
-      class="secondary"
-      onclick="connectCamera()">
-
-      📷 Connect Camera
-
-      </button>
-
-      <button
-      class="primary"
-      onclick="goLive()">
-
-      🔴 Go Live
-
-      </button>
-
-    </div>
-
-    `
-  );
-}
-
-async function connectCamera(){
-
-  try{
-
-    cameraStream =
-      await navigator.mediaDevices.getUserMedia({
-        video:true,
-        audio:true
+      await navigator.share({
+        title: "MENA",
+        text: shareText
       });
 
-    document.getElementById(
-      "cameraPreview"
-    ).srcObject=cameraStream;
+    } catch (error) {
+      console.log("Share cancelled.");
+    }
 
-    showToast("Camera connected.");
+  } else {
 
-  }catch(error){
+    try {
 
-    showToast(
-      "Camera permission was denied."
+      await navigator.clipboard.writeText(
+        shareText
+      );
+
+      showMessage(
+        "Post information copied."
+      );
+
+    } catch {
+      showMessage(shareText);
+    }
+  }
+
+  renderHome();
+}
+
+/* =========================================================
+   FOLLOW
+========================================================= */
+
+function followUser(userId) {
+
+  if (!database.user) {
+    openSignup();
+    return;
+  }
+
+  if (
+    userId === database.user.id
+  ) {
+    showMessage(
+      "You cannot follow yourself."
+    );
+    return;
+  }
+
+  const user =
+    database.users.find(
+      u => u.id === userId
     );
 
-  }
+  if (!user) return;
+
+  database.user.following =
+    (database.user.following || 0) + 1;
+
+  user.followers =
+    (user.followers || 0) + 1;
+
+  saveDatabase();
+
+  showMessage(
+    `You followed @${user.username}`
+  );
+
+  renderHome();
 }
 
-function goLive(){
+/* =========================================================
+   GIFTS
+========================================================= */
 
-  if(!cameraStream){
-    showToast("Connect camera first.");
+function openGiftMenu(targetId) {
+
+  if (!database.user) {
+    openSignup();
     return;
   }
 
-  const title =
-    document.getElementById("streamName")
-      .value.trim();
+  let menu =
+    "SELECT GIFT\n\n";
 
-  if(!title){
-    showToast("Enter stream name.");
+  gifts.forEach(
+    (gift, index) => {
+      menu +=
+        `${index + 1}. ${gift[0]} ${gift[1]} — ${gift[2]} coins\n`;
+    }
+  );
+
+  const choice =
+    Number(prompt(menu));
+
+  if (
+    !choice ||
+    choice < 1 ||
+    choice > gifts.length
+  ) {
     return;
   }
 
-  database.streams.unshift({
+  const gift = gifts[choice - 1];
 
-    id:Date.now().toString(),
-
-    name:database.user.name,
-
-    title,
-
-    group:
-      document.getElementById("groupName")
-      .value.trim()
-      || "MENA Live Chat",
-
-    date:Date.now()
-
-  });
-
-  save();
-
-  stopCamera();
-
-  closeModal();
-
-  currentPage="home";
-
-  render();
-
-  showToast("Live room created.");
-}
-
-function stopCamera(){
-
-  if(cameraStream){
-
-    cameraStream
-      .getTracks()
-      .forEach(track=>track.stop());
-
-    cameraStream=null;
-  }
-}
-
-function openStream(id){
-
-  const stream =
-    database.streams.find(x=>x.id===id);
-
-  if(!stream)return;
-
-  openModal(
-
-    "🔴 "+stream.title,
-
-    `
-
-    <div class="notice">
-
-    Host:
-    <b>${escapeHTML(stream.name)}</b>
-
-    <br>
-
-    Group:
-    ${escapeHTML(stream.group)}
-
-    </div>
-
-    <div class="chat">
-
-    No fake viewers,
-    fake comments or fake likes
-    are generated.
-
-    </div>
-
-    <div class="grid">
-
-      <button
-      class="secondary"
-      onclick="showToast('Follow requires backend account sync.')">
-
-      + Follow
-
-      </button>
-
-      <button
-      class="primary"
-      onclick="giftStream('${id}')">
-
-      🎁 Gift
-
-      </button>
-
-    </div>
-
-    <div class="formGroup">
-
-      <input
-      placeholder="Comment / guest request">
-
-      <button
-      class="secondary"
-      style="width:100%;margin-top:8px"
-      onclick="showToast('Live chat requires the backend.')">
-
-      Send / Request Guest
-
-      </button>
-
-    </div>
-
-    `
+  sendGift(
+    targetId,
+    gift
   );
 }
 
-/* GIFTS */
+function sendGift(targetId, gift) {
 
-function giftPost(id){
+  const [emoji, name, price] = gift;
 
-  if(!database.user){
-    signup();
-    return;
-  }
+  if (database.coins < price) {
 
-  giftWindow("post",id);
-}
-
-function giftStream(id){
-
-  giftWindow("stream",id);
-}
-
-function giftWindow(type,id){
-
-  openModal(
-
-    "Send Gift",
-
-    `
-
-    <p>
-    Your balance:
-    <b class="coin">
-    ${database.coins.toLocaleString()} coins
-    </b>
-    </p>
-
-    <p>
-    1 coin = 0.50 ETB
-    </p>
-
-    <div class="giftGrid">
-
-      ${gifts.map(g=>`
-
-        <button
-        class="gift"
-        onclick="sendGift(${g[2]},'${type}','${id}')">
-
-        <div class="giftEmoji">
-        ${g[0]}
-        </div>
-
-        <b>${g[1]}</b>
-
-        <small>
-        ${g[2].toLocaleString()} coins
-        </small>
-
-        </button>
-
-      `).join("")}
-
-    </div>
-
-    `
-  );
-}
-
-function sendGift(cost,type,id){
-
-  if(database.coins<cost){
-
-    showToast(
-      "Not enough coins. Open Shop Coins."
+    showMessage(
+      `Not enough coins.\n\n` +
+      `This gift costs ${price} coins.\n` +
+      `You have ${database.coins} coins.`
     );
 
     return;
   }
 
-  database.coins-=cost;
+  database.coins -= price;
 
-  const creatorAmount =
-    cost*0.70;
+  const receiverCoins =
+    Math.floor(
+      price *
+      (1 - APP.giftPlatformPercent / 100)
+    );
 
-  const platformAmount =
-    cost*0.30;
-
-  database.notifications.push({
-
-    type:"gift",
-
-    giftCoins:cost,
-
-    creatorCoins:creatorAmount,
-
-    platformCoins:platformAmount,
-
-    target:type,
-
-    targetId:id,
-
-    date:Date.now()
-
+  database.notifications.unshift({
+    id: uid("notification"),
+    type: "gift",
+    gift: name,
+    coins: price,
+    receiverCoins,
+    createdAt:
+      new Date().toISOString()
   });
 
-  save();
+  saveDatabase();
 
-  closeModal();
+  updateWalletUI();
 
-  showToast(
-    `${cost.toLocaleString()} coin gift sent.`
+  showMessage(
+    `${emoji} ${name} sent!\n\n` +
+    `Spent: ${price} coins\n` +
+    `Platform share: ${APP.giftPlatformPercent}%\n` +
+    `Creator share: ${receiverCoins} coins`
   );
 }
 
-/* COIN SHOP */
+/* =========================================================
+   COIN SHOP
+========================================================= */
 
-function coinShop(){
+function openCoinShop() {
 
-  if(!database.user){
-    signup();
+  const amount =
+    Number(
+      prompt(
+        "COIN SHOP\n\n" +
+        "1 coin = 0.50 ETB\n\n" +
+        "Enter coins to buy:"
+      )
+    );
+
+  if (
+    !amount ||
+    amount < 10
+  ) {
+    showMessage(
+      "Minimum purchase is 10 coins."
+    );
     return;
   }
 
-  const packs=[
-    10,
-    50,
-    100,
-    500,
-    1000,
-    5000,
-    10000,
-    27000
-  ];
+  const cost =
+    amount * APP.coinValue;
 
-  openModal(
+  const provider =
+    prompt(
+      `Buy ${amount} coins for ${money(cost)} ETB.\n\n` +
+      "1 = Telebirr\n" +
+      "2 = M-Pesa"
+    );
 
-    "🪙 Shop Coins",
+  if (
+    provider !== "1" &&
+    provider !== "2"
+  ) {
+    return;
+  }
 
-    `
+  const payment =
+    provider === "1"
+      ? "Telebirr"
+      : "M-Pesa";
 
-    <div class="notice">
-
-    1 coin = 0.50 ETB
-
-    <br>
-
-    Minimum purchase:
-    10 coins = 5 ETB
-
-    <br><br>
-
-    Actual payment requires
-    Telebirr/M-Pesa API integration.
-
-    </div>
-
-    <div class="coinGrid">
-
-      ${packs.map(coins=>`
-
-      <div class="coinPack">
-
-        🪙
-
-        <br>
-
-        <strong>
-        ${coins.toLocaleString()}
-        </strong>
-
-        coins
-
-        <br>
-
-        ${(coins*.5).toLocaleString()}
-        ETB
-
-        <button
-        onclick="paymentChoice(${coins})">
-
-        Buy
-
-        </button>
-
-      </div>
-
-      `).join("")}
-
-    </div>
-
-    `
+  showMessage(
+    `${payment} payment page would open here.\n\n` +
+    `Amount: ${money(cost)} ETB\n` +
+    `Coins: ${amount}`
   );
+
+  /*
+    IMPORTANT:
+    Real Telebirr/M-Pesa payment must be
+    processed by a secure backend/API.
+
+    Never put payment secret keys here.
+  */
 }
 
-function paymentChoice(coins){
+/* =========================================================
+   WALLET
+========================================================= */
 
-  openModal(
+function openWallet() {
 
-    "Choose Payment",
+  if (!database.user) {
+    openSignup();
+    return;
+  }
 
-    `
+  const provider =
+    prompt(
+      "Choose wallet:\n\n" +
+      "1 = Telebirr\n" +
+      "2 = M-Pesa"
+    );
 
-    <p>
+  if (
+    provider !== "1" &&
+    provider !== "2"
+  ) {
+    return;
+  }
 
-    ${coins.toLocaleString()}
-    coins =
-    ${(coins*.5).toLocaleString()}
-    ETB
+  const walletName =
+    prompt(
+      "Wallet account name:"
+    );
 
-    </p>
-
-    <div class="choiceGrid">
-
-      <button
-      class="choice"
-      onclick="paymentForm('Telebirr',${coins})">
-
-      <span>🟢</span>
-      Telebirr
-
-      </button>
-
-      <button
-      class="choice"
-      onclick="paymentForm('M-Pesa',${coins})">
-
-      <span>🔵</span>
-      M-Pesa
-
-      </button>
-
-    </div>
-
-    `
-  );
-}
-
-function paymentForm(method,coins){
-
-  openModal(
-
-    method,
-
-    `
-
-    <div class="notice">
-
-    The request is marked pending.
-    This demo will never pretend that
-    money was transferred.
-
-    </div>
-
-    <div class="formGroup">
-
-      <label>
-      ${method} Number
-      </label>
-
-      <input
-      id="paymentNumber"
-      inputmode="tel">
-
-    </div>
-
-    <div class="formGroup">
-
-      <label>
-      Account Name
-      </label>
-
-      <input id="paymentName">
-
-    </div>
-
-    <button
-    class="primary"
-    style="width:100%"
-    onclick="submitPayment('${method}',${coins})">
-
-    Continue
-
-    </button>
-
-    `
-  );
-}
-
-function submitPayment(method,coins){
+  if (!walletName) return;
 
   const number =
-    document.getElementById(
-      "paymentNumber"
-    ).value.trim();
-
-  const name =
-    document.getElementById(
-      "paymentName"
-    ).value.trim();
-
-  if(!number||!name){
-
-    showToast(
-      "Enter number and account name."
+    prompt(
+      "Telebirr/M-Pesa number:"
     );
 
-    return;
-  }
+  if (!number) return;
 
-  database.notifications.push({
+  database.wallet = {
+    provider:
+      provider === "1"
+        ? "Telebirr"
+        : "M-Pesa",
 
-    type:"coinPayment",
+    number: number.trim(),
 
-    method,
+    name: walletName.trim(),
 
-    number,
-
-    name,
-
-    coins,
-
-    amount:coins*.5,
-
-    status:"pending",
-
-    date:Date.now()
-
-  });
-
-  save();
-
-  closeModal();
-
-  showToast(
-    "Payment request saved as pending."
-  );
-}
-
-/* WALLET */
-
-function walletConnect(){
-
-  if(!database.user){
-    signup();
-    return;
-  }
-
-  openModal(
-
-    "Connect Wallet",
-
-    `
-
-    <div class="choiceGrid">
-
-      <button
-      class="choice"
-      onclick="walletForm('telebirr')">
-
-      <span>🟢</span>
-      Telebirr
-
-      </button>
-
-      <button
-      class="choice"
-      onclick="walletForm('mpesa')">
-
-      <span>🔵</span>
-      M-Pesa
-
-      </button>
-
-    </div>
-
-    `
-  );
-}
-
-function walletForm(method){
-
-  const name =
-    method==="telebirr"
-      ?"Telebirr"
-      :"M-Pesa";
-
-  openModal(
-
-    "Connect "+name,
-
-    `
-
-    <div class="formGroup">
-
-      <label>
-      ${name} Number
-      </label>
-
-      <input
-      id="walletNumber"
-      inputmode="tel">
-
-    </div>
-
-    <div class="formGroup">
-
-      <label>
-      Account Name
-      </label>
-
-      <input id="walletName">
-
-    </div>
-
-    <button
-    class="primary"
-    style="width:100%"
-    onclick="saveWallet('${method}')">
-
-    Connect Wallet
-
-    </button>
-
-    `
-  );
-}
-
-function saveWallet(method){
-
-  const number =
-    document.getElementById(
-      "walletNumber"
-    ).value.trim();
-
-  const name =
-    document.getElementById(
-      "walletName"
-    ).value.trim();
-
-  if(!number||!name){
-
-    showToast(
-      "Enter wallet number and name."
-    );
-
-    return;
-  }
-
-  database.wallet[method]={
-    number,
-    name
+    connected: true
   };
 
-  save();
+  saveDatabase();
 
-  closeModal();
-
-  showToast("Wallet connected.");
-}
-
-/* DEPOSIT */
-
-function deposit(){
-
-  if(!database.user){
-    signup();
-    return;
-  }
-
-  if(
-    !database.wallet.telebirr &&
-    !database.wallet.mpesa
-  ){
-
-    walletConnect();
-
-    return;
-  }
-
-  openModal(
-
-    "Deposit Money",
-
-    `
-
-    <p>
-    Choose your connected wallet.
-    </p>
-
-    <div class="choiceGrid">
-
-      <button
-      class="choice"
-      onclick="depositForm('telebirr')">
-
-      <span>🟢</span>
-      Telebirr
-
-      </button>
-
-      <button
-      class="choice"
-      onclick="depositForm('mpesa')">
-
-      <span>🔵</span>
-      M-Pesa
-
-      </button>
-
-    </div>
-
-    `
+  showMessage(
+    "Wallet connected on this device."
   );
 }
 
-function depositForm(method){
+/* =========================================================
+   DEPOSIT
+========================================================= */
 
-  openModal(
+function openDeposit() {
 
-    "Deposit",
+  if (!database.user) {
+    openSignup();
+    return;
+  }
 
-    `
+  const provider =
+    prompt(
+      "DEPOSIT\n\n" +
+      "1 = Telebirr\n" +
+      "2 = M-Pesa"
+    );
 
-    <div class="formGroup">
-
-      <label>
-      Amount (ETB)
-      </label>
-
-      <input
-      id="depositAmount"
-      type="number"
-      min="1">
-
-    </div>
-
-    <button
-    class="primary"
-    style="width:100%"
-    onclick="submitDeposit('${method}')">
-
-    Deposit
-
-    </button>
-
-    `
-  );
-}
-
-function submitDeposit(method){
+  if (
+    provider !== "1" &&
+    provider !== "2"
+  ) {
+    return;
+  }
 
   const amount =
     Number(
-      document.getElementById(
-        "depositAmount"
-      ).value
+      prompt("Enter deposit amount in ETB:")
     );
 
-  if(amount<=0){
-
-    showToast(
-      "Enter a valid amount."
-    );
-
+  if (
+    !amount ||
+    amount <= 0
+  ) {
     return;
   }
 
-  database.notifications.push({
+  const method =
+    provider === "1"
+      ? "Telebirr"
+      : "M-Pesa";
 
-    type:"deposit",
-
-    method,
-
-    amount,
-
-    status:"pending",
-
-    date:Date.now()
-
-  });
-
-  save();
-
-  closeModal();
-
-  showToast(
-    "Deposit request pending."
+  showMessage(
+    `${method} deposit request\n\n` +
+    `Amount: ${money(amount)} ETB\n\n` +
+    "A real payment gateway must be connected here."
   );
 }
 
-/* WITHDRAW */
+/* =========================================================
+   WITHDRAW
+========================================================= */
 
-function withdraw(){
+function openWithdraw() {
 
-  if(!database.user){
-    signup();
+  if (!database.user) {
+    openSignup();
     return;
   }
 
-  openModal(
+  if (!database.wallet.connected) {
 
-    "Withdraw Money",
+    showMessage(
+      "Connect your Telebirr or M-Pesa wallet first."
+    );
 
-    `
+    openWallet();
 
-    <div class="notice">
-
-    Minimum withdrawal:
-    <b>10 ETB</b>
-
-    <br>
-
-    You can only withdraw
-    your real available balance.
-
-    </div>
-
-    <div class="formGroup">
-
-      <label>
-      Amount
-      </label>
-
-      <input
-      id="withdrawAmount"
-      type="number"
-      min="10">
-
-    </div>
-
-    <div class="choiceGrid">
-
-      <button
-      class="choice"
-      onclick="submitWithdraw('telebirr')">
-
-      <span>🟢</span>
-      Telebirr
-
-      </button>
-
-      <button
-      class="choice"
-      onclick="submitWithdraw('mpesa')">
-
-      <span>🔵</span>
-      M-Pesa
-
-      </button>
-
-    </div>
-
-    `
-  );
-}
-
-function submitWithdraw(method){
+    return;
+  }
 
   const amount =
     Number(
-      document.getElementById(
-        "withdrawAmount"
-      ).value
+      prompt(
+        `Available balance: ${money(database.balance)} ETB\n\n` +
+        `Minimum withdrawal: ${APP.withdrawalMinimum} ETB\n\n` +
+        "Enter withdrawal amount:"
+      )
     );
 
-  if(amount<10){
+  if (
+    !amount ||
+    amount < APP.withdrawalMinimum
+  ) {
 
-    showToast(
-      "Minimum withdrawal is 10 ETB."
+    showMessage(
+      `Minimum withdrawal is ${APP.withdrawalMinimum} ETB.`
     );
 
     return;
   }
 
-  if(amount>database.balance){
+  if (
+    amount > database.balance
+  ) {
 
-    showToast(
+    showMessage(
       "Insufficient balance."
     );
 
     return;
   }
 
-  if(!database.wallet[method]){
+  showMessage(
+    `Withdrawal request created.\n\n` +
+    `Amount: ${money(amount)} ETB\n` +
+    `Method: ${database.wallet.provider}\n` +
+    `Number: ${database.wallet.number}\n\n` +
+    "A real backend/payment API is required to send the money."
+  );
+}
 
-    showToast(
-      "Connect this wallet first."
-    );
+/* =========================================================
+   UPDATE WALLET UI
+========================================================= */
 
+function updateWalletUI() {
+
+  const balance =
+    $("walletBalance");
+
+  const coins =
+    $("coinBalance");
+
+  if (balance) {
+    balance.textContent =
+      money(database.balance) +
+      " ETB";
+  }
+
+  if (coins) {
+    coins.textContent =
+      database.coins;
+  }
+}
+
+/* =========================================================
+   STREAMING
+========================================================= */
+
+function createStream() {
+
+  if (!database.user) {
+    openSignup();
     return;
   }
 
-  database.balance-=amount;
-
-  database.notifications.push({
-
-    type:"withdraw",
-
-    method,
-
-    amount,
-
-    status:"pending",
-
-    date:Date.now()
-
-  });
-
-  save();
-
-  closeModal();
-
-  showToast(
-    "Withdrawal request submitted."
-  );
-}
-
-/* PROFILE */
-
-function editProfile(){
-
-  openModal(
-
-    "Edit Profile",
-
-    `
-
-    <div class="formGroup">
-
-      <label>
-      Name
-      </label>
-
-      <input
-      id="editName"
-      value="${escapeHTML(database.user.name)}">
-
-    </div>
-
-    <div class="formGroup">
-
-      <label>
-      Username
-      </label>
-
-      <input
-      id="editUsername"
-      value="${escapeHTML(database.user.username)}">
-
-    </div>
-
-    <div class="choiceGrid">
-
-      <button
-      class="choice"
-      onclick="profilePhoto()">
-
-      <span>📷</span>
-      Change Photo
-
-      </button>
-
-      <button
-      class="choice"
-      onclick="profileGallery()">
-
-      <span>🖼️</span>
-      Gallery
-
-      </button>
-
-    </div>
-
-    <input
-    id="profileInput"
-    class="fileInput"
-    type="file"
-    accept="image/*">
-
-    <button
-    class="primary"
-    style="width:100%;margin-top:12px"
-    onclick="saveProfile()">
-
-    Save Profile
-
-    </button>
-
-    `
-  );
-}
-
-function profilePhoto(){
-
-  const input =
-    document.getElementById(
-      "profileInput"
+  const streamName =
+    prompt(
+      "Enter stream name:"
     );
 
-  input.setAttribute("capture","user");
-  input.click();
+  if (!streamName) return;
 
-  profileImageReader(input);
-}
-
-function profileGallery(){
-
-  const input =
-    document.getElementById(
-      "profileInput"
-    );
-
-  input.removeAttribute("capture");
-  input.click();
-
-  profileImageReader(input);
-}
-
-function profileImageReader(input){
-
-  input.onchange=()=>{
-
-    const file=input.files[0];
-
-    if(!file)return;
-
-    const reader=new FileReader();
-
-    reader.onload=()=>{
-      database.user.photo=reader.result;
-    };
-
-    reader.readAsDataURL(file);
+  const stream = {
+    id: uid("stream"),
+    userId: database.user.id,
+    name: database.user.name,
+    username: database.user.username,
+    title: streamName,
+    viewers: 0,
+    likes: 0,
+    comments: [],
+    gifts: [],
+    startedAt:
+      new Date().toISOString(),
+    live: true
   };
-}
 
-function saveProfile(){
+  database.streams.unshift(stream);
 
-  database.user.name =
-    document.getElementById(
-      "editName"
-    ).value.trim();
+  saveDatabase();
 
-  database.user.username =
-    document.getElementById(
-      "editUsername"
-    ).value.trim();
+  startCamera();
 
-  save();
-
-  closeModal();
-
-  render();
-
-  showToast(
-    "Profile updated."
-  );
-}
-
-/* MARKETPLACE */
-
-function marketPost(){
-
-  if(!database.user){
-    signup();
-    return;
-  }
-
-  openModal(
-
-    "Create Market Listing",
-
-    `
-
-    <div class="notice">
-
-    Marketplace posting fee:
-    <b>100 ETB</b>.
-
-    </div>
-
-    <div class="formGroup">
-
-      <label>
-      Product
-      </label>
-
-      <input id="marketTitle">
-
-    </div>
-
-    <div class="formGroup">
-
-      <label>
-      Price
-      </label>
-
-      <input
-      id="marketPrice"
-      type="number">
-
-    </div>
-
-    <div class="formGroup">
-
-      <label>
-      Location
-      </label>
-
-      <input id="marketLocation">
-
-    </div>
-
-    <div class="formGroup">
-
-      <label>
-      Description
-      </label>
-
-      <textarea
-      id="marketDescription">
-      </textarea>
-
-    </div>
-
-    <input
-    id="marketImage"
-    class="fileInput"
-    type="file"
-    accept="image/*">
-
-    <button
-    class="secondary"
-    style="width:100%"
-    onclick="document.getElementById('marketImage').click()">
-
-    Choose Product Photo
-
-    </button>
-
-    <button
-    class="primary"
-    style="width:100%;margin-top:10px"
-    onclick="marketNext()">
-
-    Next — 100 ETB Posting Fee
-
-    </button>
-
-    `
+  showMessage(
+    "Live stream created.\n\n" +
+    "Camera and microphone permission will be requested."
   );
 
-  document.getElementById(
-    "marketImage"
-  ).onchange=e=>{
-
-    const file=e.target.files[0];
-
-    if(!file)return;
-
-    const reader=new FileReader();
-
-    reader.onload=()=>{
-      selectedMedia=reader.result;
-    };
-
-    reader.readAsDataURL(file);
-  };
+  renderStreams();
 }
 
-function marketNext(){
+function startCamera() {
 
-  const title =
-    document.getElementById(
-      "marketTitle"
-    ).value.trim();
+  if (
+    !navigator.mediaDevices ||
+    !navigator.mediaDevices.getUserMedia
+  ) {
 
-  const price =
-    document.getElementById(
-      "marketPrice"
-    ).value;
-
-  if(!title||!price){
-
-    showToast(
-      "Enter product and price."
+    showMessage(
+      "Camera access is not supported by this browser."
     );
 
     return;
   }
 
-  openModal(
+  navigator.mediaDevices
+    .getUserMedia({
+      video: true,
+      audio: true
+    })
+    .then(stream => {
 
-    "Marketplace Payment",
+      let video =
+        $("streamVideo");
 
-    `
+      if (!video) {
 
-    <div class="notice">
+        video =
+          document.createElement("video");
 
-    Listing fee:
-    <b>100 ETB</b>
+        video.id =
+          "streamVideo";
 
-    <br><br>
+        video.autoplay = true;
+        video.playsInline = true;
+        video.muted = true;
 
-    Connect a real payment provider
-    before publishing in production.
+        video.style.width =
+          "100%";
 
-    </div>
+        video.style.borderRadius =
+          "18px";
 
-    <button
-    class="primary"
-    style="width:100%"
-    onclick="showToast('Real payment API required.')">
-
-    Pay 100 ETB
-
-    </button>
-
-    `
-  );
-}
-
-/* FREE WORK */
-
-function freeWork(){
-
-  if(!database.user){
-    signup();
-    return;
-  }
-
-  openModal(
-
-    "Post Free Work",
-
-    `
-
-    <div class="formGroup">
-
-      <label>
-      Work Title
-      </label>
-
-      <input id="workTitle">
-
-    </div>
-
-    <div class="formGroup">
-
-      <label>
-      Details / Procedure
-      </label>
-
-      <textarea
-      id="workDescription">
-      </textarea>
-
-    </div>
-
-    <div class="formGroup">
-
-      <label>
-      Material Amount
-      </label>
-
-      <input
-      id="workAmount"
-      type="number">
-
-    </div>
-
-    <button
-    class="primary"
-    style="width:100%"
-    onclick="workNext()">
-
-    Next — 100 ETB
-
-    </button>
-
-    `
-  );
-}
-
-function workNext(){
-
-  const title =
-    document.getElementById(
-      "workTitle"
-    ).value.trim();
-
-  const description =
-    document.getElementById(
-      "workDescription"
-    ).value.trim();
-
-  const amount =
-    Number(
-      document.getElementById(
-        "workAmount"
-      ).value
-    );
-
-  if(!title||!description){
-
-    showToast(
-      "Complete the work information."
-    );
-
-    return;
-  }
-
-  database.work.unshift({
-
-    id:Date.now(),
-
-    author:database.user.name,
-
-    photo:database.user.photo,
-
-    title,
-
-    description,
-
-    amount,
-
-    date:Date.now()
-
-  });
-
-  save();
-
-  closeModal();
-
-  currentPage="work";
-
-  render();
-
-  showToast(
-    "Work post saved locally."
-  );
-}
-
-/* COMMENTS */
-
-function comments(id){
-
-  const post =
-    database.posts.find(
-      x=>x.id===id
-    );
-
-  if(!post)return;
-
-  openModal(
-
-    "Comments",
-
-    `
-
-    <div class="chat">
-
-      ${
-        post.comments?.length
-        ?
-        post.comments.map(c=>`
-          <div class="chatLine">
-          <b>${escapeHTML(c.name)}:</b>
-          ${escapeHTML(c.text)}
-          </div>
-        `).join("")
-        :
-        "No comments yet."
+        document.body.prepend(video);
       }
 
-    </div>
+      video.srcObject = stream;
 
-    <div class="formGroup">
+    })
+    .catch(error => {
 
-      <input
-      id="commentInput"
-      placeholder="Write a comment">
+      console.error(error);
 
-    </div>
-
-    <button
-    class="primary"
-    style="width:100%"
-    onclick="sendComment('${id}')">
-
-    Send Comment
-
-    </button>
-
-    <button
-    class="secondary"
-    style="width:100%;margin-top:8px"
-    onclick="giftPost('${id}')">
-
-    🎁 Send Gift in Comment
-
-    </button>
-
-    `
-  );
+      showMessage(
+        "Camera/microphone permission was not granted."
+      );
+    });
 }
 
-function sendComment(id){
+function renderStreams() {
 
-  const text =
-    document.getElementById(
-      "commentInput"
-    ).value.trim();
+  const container =
+    $("liveContainer");
 
-  if(!text)return;
+  if (!container) return;
 
-  const post =
-    database.posts.find(
-      x=>x.id===id
+  const liveStreams =
+    database.streams.filter(
+      stream => stream.live
     );
 
-  post.comments ??= [];
+  if (!liveStreams.length) {
 
-  post.comments.push({
-
-    name:database.user.name,
-
-    text,
-
-    date:Date.now()
-
-  });
-
-  save();
-
-  comments(id);
-}
-
-/* OTHER */
-
-function likePost(id){
-
-  const post =
-    database.posts.find(
-      x=>x.id===id
-    );
-
-  if(!post)return;
-
-  post.likes=(post.likes||0)+1;
-
-  save();
-
-  render();
-}
-
-async function sharePost(id){
-
-  const post =
-    database.posts.find(
-      x=>x.id===id
-    );
-
-  const text =
-    `MENA post by ${post.author}`;
-
-  if(navigator.share){
-
-    try{
-
-      await navigator.share({
-        title:"MENA",
-        text
-      });
-
-    }catch{}
-
-  }else{
-
-    showToast(
-      "Sharing is available from your device."
-    );
-
-  }
-}
-
-function followUser(){
-
-  if(!database.user){
-
-    signup();
+    container.innerHTML =
+      "<p>No one is live right now.</p>";
 
     return;
   }
 
-  showToast(
-    "Follow is ready for backend account sync."
-  );
-}
+  container.innerHTML =
+    liveStreams
+      .map(stream => `
+        <div class="live-card">
 
-function contactWork(){
+          <span class="live-badge">
+            LIVE
+          </span>
 
-  showToast(
-    "Employer messaging requires backend."
-  );
-}
+          <h3>
+            ${escapeHTML(stream.title)}
+          </h3>
 
-/* MODAL */
-
-function openModal(title,body){
-
-  modal.innerHTML=`
-
-    <div
-    class="modalBackground"
-    onclick="outsideModal(event)">
-
-      <div class="modalBox">
-
-        <div class="modalHeader">
-
-          <h2>${title}</h2>
+          <p>
+            @${escapeHTML(stream.username)}
+          </p>
 
           <button
-          class="closeBtn"
-          onclick="closeModal()">
-
-          ×
-
+            data-action="stream"
+            data-id="${stream.id}">
+            Join Stream
           </button>
 
         </div>
-
-        ${body}
-
-      </div>
-
-    </div>
-
-  `;
+      `)
+      .join("");
 }
 
-function outsideModal(event){
+function openStream(streamId) {
 
-  if(event.target.classList.contains(
-    "modalBackground"
-  )){
-    closeModal();
+  const stream =
+    database.streams.find(
+      s => s.id === streamId
+    );
+
+  if (!stream) return;
+
+  stream.viewers++;
+
+  saveDatabase();
+
+  startCamera();
+
+  showMessage(
+    `Joined: ${stream.title}\n\n` +
+    "Stream chat, guest requests and gifts are available in the live interface."
+  );
+}
+
+/* =========================================================
+   MARKETPLACE
+========================================================= */
+
+function createMarketPost() {
+
+  if (!database.user) {
+    openSignup();
+    return;
+  }
+
+  const feeConfirmed =
+    confirm(
+      "Marketplace listing fee: 100 ETB.\n\n" +
+      "Continue?"
+    );
+
+  if (!feeConfirmed) return;
+
+  const title =
+    prompt("Product name:");
+
+  if (!title) return;
+
+  const price =
+    Number(
+      prompt("Product price in ETB:")
+    );
+
+  if (
+    !price ||
+    price <= 0
+  ) {
+    return;
+  }
+
+  const description =
+    prompt("Product description:");
+
+  const location =
+    prompt("Product location:");
+
+  const phone =
+    prompt("Seller phone number:");
+
+  const input =
+    document.createElement("input");
+
+  input.type = "file";
+  input.accept = "image/*";
+
+  input.onchange = event => {
+
+    const file =
+      event.target.files[0];
+
+    if (!file) return;
+
+    const reader =
+      new FileReader();
+
+    reader.onload = () => {
+
+      const item = {
+
+        id: uid("market"),
+
+        sellerId:
+          database.user.id,
+
+        seller:
+          database.user.name,
+
+        title,
+
+        price,
+
+        description:
+          description || "",
+
+        location:
+          location || "",
+
+        phone:
+          phone || "",
+
+        image:
+          reader.result,
+
+        createdAt:
+          new Date().toISOString()
+      };
+
+      database.market.unshift(item);
+
+      saveDatabase();
+
+      renderMarket();
+
+      showMessage(
+        "Marketplace listing created.\n\n" +
+        "The 100 ETB fee requires a real payment gateway before production."
+      );
+    };
+
+    reader.readAsDataURL(file);
+  };
+
+  input.click();
+}
+
+function renderMarket() {
+
+  const container =
+    $("marketContainer");
+
+  if (!container) return;
+
+  if (!database.market.length) {
+
+    container.innerHTML = `
+      <div class="empty-state">
+        <h3>Marketplace</h3>
+        <p>No products listed yet.</p>
+      </div>
+    `;
+
+    return;
+  }
+
+  container.innerHTML =
+    database.market
+      .map(item => `
+        <article class="market-card">
+
+          ${
+            item.image
+              ? `<img src="${item.image}" alt="${escapeHTML(item.title)}">`
+              : ""
+          }
+
+          <div class="market-info">
+
+            <h3>
+              ${escapeHTML(item.title)}
+            </h3>
+
+            <strong>
+              ${money(item.price)} ETB
+            </strong>
+
+            <p>
+              ${escapeHTML(item.description)}
+            </p>
+
+            <small>
+              📍 ${escapeHTML(item.location)}
+            </small>
+
+            <br>
+
+            <small>
+              Seller: ${escapeHTML(item.seller)}
+            </small>
+
+            <br><br>
+
+            <a
+              href="tel:${escapeHTML(item.phone)}">
+              📞 Contact seller
+            </a>
+
+          </div>
+
+        </article>
+      `)
+      .join("");
+}
+
+/* =========================================================
+   FREE WORK
+========================================================= */
+
+function createWorkPost() {
+
+  if (!database.user) {
+    openSignup();
+    return;
+  }
+
+  const title =
+    prompt("Job / work title:");
+
+  if (!title) return;
+
+  const details =
+    prompt("Explain the work:");
+
+  const materialAmount =
+    Number(
+      prompt(
+        "Material amount in ETB (enter 0 if none):"
+      )
+    ) || 0;
+
+  const contact =
+    prompt("Employer contact:");
+
+  const location =
+    prompt("Work location:");
+
+  const item = {
+
+    id: uid("work"),
+
+    employerId:
+      database.user.id,
+
+    employer:
+      database.user.name,
+
+    title,
+
+    details:
+      details || "",
+
+    materialAmount,
+
+    platformFee:
+      materialAmount *
+      (APP.workPlatformPercent / 100),
+
+    contact:
+      contact || "",
+
+    location:
+      location || "",
+
+    createdAt:
+      new Date().toISOString()
+  };
+
+  database.work.unshift(item);
+
+  saveDatabase();
+
+  renderWork();
+
+  showMessage(
+    "Free Work listing created.\n\n" +
+    "Posting fee: 100 ETB\n" +
+    "Platform material fee: 5%"
+  );
+}
+
+function renderWork() {
+
+  const container =
+    $("workContainer");
+
+  if (!container) return;
+
+  if (!database.work.length) {
+
+    container.innerHTML = `
+      <div class="empty-state">
+        <h3>Free Work</h3>
+        <p>No work opportunities posted yet.</p>
+      </div>
+    `;
+
+    return;
+  }
+
+  container.innerHTML =
+    database.work
+      .map(job => `
+        <article class="work-card">
+
+          <h3>
+            ${escapeHTML(job.title)}
+          </h3>
+
+          <p>
+            ${escapeHTML(job.details)}
+          </p>
+
+          <p>
+            👤 ${escapeHTML(job.employer)}
+          </p>
+
+          <p>
+            📍 ${escapeHTML(job.location)}
+          </p>
+
+          ${
+            job.materialAmount > 0
+              ? `
+                <p>
+                  Material:
+                  ${money(job.materialAmount)} ETB
+                </p>
+              `
+              : ""
+          }
+
+          <a
+            href="tel:${escapeHTML(job.contact)}">
+            📞 Contact employer
+          </a>
+
+        </article>
+      `)
+      .join("");
+}
+
+/* =========================================================
+   SEARCH
+========================================================= */
+
+function openSearch() {
+
+  const query =
+    prompt(
+      "Search MENA:"
+    );
+
+  if (!query) return;
+
+  const q =
+    query.toLowerCase().trim();
+
+  const posts =
+    database.posts.filter(post =>
+      (
+        post.caption +
+        " " +
+        post.name +
+        " " +
+        post.username
+      )
+        .toLowerCase()
+        .includes(q)
+    );
+
+  const market =
+    database.market.filter(item =>
+      (
+        item.title +
+        " " +
+        item.description +
+        " " +
+        item.location
+      )
+        .toLowerCase()
+        .includes(q)
+    );
+
+  const work =
+    database.work.filter(item =>
+      (
+        item.title +
+        " " +
+        item.details +
+        " " +
+        item.location
+      )
+        .toLowerCase()
+        .includes(q)
+    );
+
+  showSearchResults(
+    posts,
+    market,
+    work,
+    query
+  );
+}
+
+function showSearchResults(
+  posts,
+  market,
+  work,
+  query
+) {
+
+  let html = `
+    <div class="search-results">
+
+      <h2>
+        Search: ${escapeHTML(query)}
+      </h2>
+
+      <h3>
+        Posts (${posts.length})
+      </h3>
+  `;
+
+  if (!posts.length) {
+    html += "<p>No posts found.</p>";
+  }
+
+  posts.forEach(post => {
+
+    html += `
+      <div class="search-item">
+
+        <b>
+          ${escapeHTML(post.name)}
+        </b>
+
+        <p>
+          ${escapeHTML(post.caption)}
+        </p>
+
+      </div>
+    `;
+  });
+
+  html += `
+      <h3>
+        Market (${market.length})
+      </h3>
+  `;
+
+  if (!market.length) {
+    html += "<p>No products found.</p>";
+  }
+
+  market.forEach(item => {
+
+    html += `
+      <div class="search-item">
+
+        <b>
+          ${escapeHTML(item.title)}
+        </b>
+
+        <p>
+          ${money(item.price)} ETB
+        </p>
+
+      </div>
+    `;
+  });
+
+  html += `
+      <h3>
+        Free Work (${work.length})
+      </h3>
+  `;
+
+  if (!work.length) {
+    html += "<p>No work found.</p>";
+  }
+
+  work.forEach(item => {
+
+    html += `
+      <div class="search-item">
+
+        <b>
+          ${escapeHTML(item.title)}
+        </b>
+
+        <p>
+          ${escapeHTML(item.location)}
+        </p>
+
+      </div>
+    `;
+  });
+
+  html += "</div>";
+
+  const page =
+    $("searchResults");
+
+  if (page) {
+
+    page.innerHTML = html;
+
+    showPage("searchPage");
+
+  } else {
+
+    showMessage(
+      `Found ${posts.length} posts, ` +
+      `${market.length} products and ` +
+      `${work.length} jobs.`
+    );
   }
 }
 
-function closeModal(){
+/* =========================================================
+   SETTINGS
+========================================================= */
 
-  stopCamera();
+function openSettings() {
 
-  modal.innerHTML="";
+  const choice =
+    prompt(
+      "MENA SETTINGS\n\n" +
+
+      "1 = Edit profile\n" +
+      "2 = Change profile photo\n" +
+      "3 = Connect Telebirr/M-Pesa\n" +
+      "4 = Coin Shop\n" +
+      "5 = Deposit\n" +
+      "6 = Withdraw\n" +
+      "7 = Account information\n" +
+      "8 = Logout"
+    );
+
+  switch (choice) {
+
+    case "1":
+      editProfile();
+      break;
+
+    case "2":
+      changeProfilePhoto();
+      break;
+
+    case "3":
+      openWallet();
+      break;
+
+    case "4":
+      openCoinShop();
+      break;
+
+    case "5":
+      openDeposit();
+      break;
+
+    case "6":
+      openWithdraw();
+      break;
+
+    case "7":
+      accountInformation();
+      break;
+
+    case "8":
+      logout();
+      break;
+  }
 }
 
-/* LOGOUT */
+function accountInformation() {
 
-function logout(){
+  if (!database.user) {
+    showMessage(
+      "You are not logged in."
+    );
+    return;
+  }
 
-  database.user=null;
-
-  save();
-
-  currentPage="home";
-
-  render();
-
-  showToast(
-    "Logged out."
+  showMessage(
+    `MENA ACCOUNT\n\n` +
+    `Name: ${database.user.name}\n` +
+    `Username: @${database.user.username}\n` +
+    `Phone: ${database.user.phone}\n` +
+    `Type: ${database.user.accountType}\n\n` +
+    `Balance: ${money(database.balance)} ETB\n` +
+    `Coins: ${database.coins}`
   );
 }
 
-/* NAVIGATION */
+/* =========================================================
+   ADD COINS — DEMO ONLY
+========================================================= */
 
-document.querySelectorAll(".nav")
-.forEach(button=>{
+function addDemoCoins() {
 
-  button.addEventListener(
-    "click",
-    ()=>{
+  if (!database.user) {
+    openSignup();
+    return;
+  }
 
-      currentPage=
-        button.dataset.page;
+  const amount =
+    Number(
+      prompt(
+        "DEMO ONLY\n\n" +
+        "Enter coins to add:"
+      )
+    );
 
-      render();
+  if (!amount || amount <= 0) return;
 
-    }
+  database.coins +=
+    Math.floor(amount);
+
+  saveDatabase();
+
+  updateWalletUI();
+
+  showMessage(
+    `${amount} demo coins added.`
+  );
+}
+
+/* =========================================================
+   STOP CAMERA
+========================================================= */
+
+function stopCamera() {
+
+  const video =
+    $("streamVideo");
+
+  if (!video) return;
+
+  const stream =
+    video.srcObject;
+
+  if (!stream) return;
+
+  stream
+    .getTracks()
+    .forEach(track => track.stop());
+
+  video.srcObject = null;
+}
+
+/* =========================================================
+   NOTIFICATIONS
+========================================================= */
+
+function showNotifications() {
+
+  if (!database.notifications.length) {
+
+    showMessage(
+      "No notifications."
+    );
+
+    return;
+  }
+
+  const text =
+    database.notifications
+      .slice(0, 20)
+      .map(item => {
+
+        if (item.type === "gift") {
+
+          return (
+            `🎁 ${item.gift} — ` +
+            `${item.coins} coins`
+          );
+        }
+
+        return "MENA notification";
+      })
+      .join("\n");
+
+  showMessage(text);
+}
+
+/* =========================================================
+   RESET LOCAL DATA
+========================================================= */
+
+function resetMenaData() {
+
+  const confirmed =
+    confirm(
+      "This will remove MENA data stored on this device.\n\nContinue?"
+    );
+
+  if (!confirmed) return;
+
+  localStorage.removeItem(
+    STORAGE_KEY
   );
 
-});
+  location.reload();
+}
 
-document.getElementById(
-  "createBtn"
-).onclick=createMenu;
+/* =========================================================
+   GLOBAL FUNCTIONS
+========================================================= */
 
-document.getElementById(
-  "settingsBtn"
-).onclick=()=>{
+window.createPost = createPost;
+window.createStream = createStream;
+window.createMarketPost = createMarketPost;
+window.createWorkPost = createWorkPost;
 
-  openModal(
+window.openSignup = openSignup;
+window.openLogin = openLogin;
 
-    "MENA Settings",
+window.openSettings = openSettings;
+window.openWallet = openWallet;
+window.openDeposit = openDeposit;
+window.openWithdraw = openWithdraw;
+window.openCoinShop = openCoinShop;
 
-    `
+window.editProfile = editProfile;
+window.changeProfilePhoto =
+  changeProfilePhoto;
 
-    <div class="choiceGrid">
+window.showNotifications =
+  showNotifications;
 
-      <button
-      class="choice"
-      onclick="currentPage='profile';closeModal();render()">
+window.addDemoCoins =
+  addDemoCoins;
 
-      <span>👤</span>
-      Profile
+window.resetMenaData =
+  resetMenaData;
 
-      </button>
+window.stopCamera =
+  stopCamera;
 
-      <button
-      class="choice"
-      onclick="walletConnect()">
+/* =========================================================
+   FINISH
+========================================================= */
 
-      <span>💳</span>
-      Wallet
-
-      </button>
-
-      <button
-      class="choice"
-      onclick="coinShop()">
-
-      <span>🪙</span>
-      Shop Coins
-
-      </button>
-
-      <button
-      class="choice"
-      onclick="createMenu()">
-
-      <span>＋</span>
-      Create
-
-      </button>
-
-    </div>
-
-    `
-  );
-
-};
-
-document.getElementById(
-  "menuBtn"
-).onclick=()=>{
-
-  openModal(
-
-    "MENA Menu",
-
-    `
-
-    <div class="choiceGrid">
-
-      <button
-      class="choice"
-      onclick="currentPage='home';closeModal();render()">
-
-      <span>⌂</span>
-      Home
-
-      </button>
-
-      <button
-      class="choice"
-      onclick="currentPage='market';closeModal();render()">
-
-      <span>🛍</span>
-      Market
-
-      </button>
-
-      <button
-      class="choice"
-      onclick="currentPage='work';closeModal();render()">
-
-      <span>💼</span>
-      Free Work
-
-      </button>
-
-      <button
-      class="choice"
-      onclick="currentPage='profile';closeModal();render()">
-
-      <span>👤</span>
-      Profile
-
-      </button>
-
-    </div>
-
-    `
-  );
-
-};
-
-render();
+console.log(
+  `MENA ${APP.version} loaded successfully.`
+);
