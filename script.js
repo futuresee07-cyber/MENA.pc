@@ -292,7 +292,8 @@ function showAuthSignup() {
 }
 
 function setupAuthButtons() {
-  qsa("[data-auth='signup']").forEach((button) => {
+  
+qsa("[data-auth='signup']").forEach((button) => {
     button.addEventListener("click", showAuthSignup);
   });
 
@@ -300,7 +301,6 @@ function setupAuthButtons() {
     button.addEventListener("click", showAuthLogin);
   });
 }
-
 function signupUser(form) {
   const formData = new FormData(form);
 
