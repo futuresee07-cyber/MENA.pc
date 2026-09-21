@@ -31,7 +31,9 @@
   margin: 0;
   padding: 0;
 }
-
+.hidden {
+  display: none !important;
+}
 html {
   scroll-behavior: smooth;
 }
@@ -112,7 +114,7 @@ main {
   background: rgba(255, 255, 255, 0.96);
   border-bottom: 1px solid var(--border);
 
-  backdrop-filter: blur(14px);
+  backdrop-filter: none;
 }
 
 .logo {
@@ -1304,7 +1306,7 @@ main {
   font-size: 13px;
   font-weight: 800;
 
-  backdrop-filter: blur(8px);
+  backdrop-filter: none;
 }
 
 .stream-live {
@@ -1350,7 +1352,7 @@ main {
 
   font-size: 18px;
 
-  backdrop-filter: blur(8px);
+  backdrop-filter: none;
 }
 
 .stream-control.active {
@@ -1832,7 +1834,7 @@ main {
 
   box-shadow: 0 10px 35px rgba(0,0,0,0.14);
 
-  backdrop-filter: blur(18px);
+  backdrop-filter: none;
 }
 
 .bottom-nav button {
