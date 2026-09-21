@@ -1565,7 +1565,7 @@ main {
 
   background: rgba(0,0,0,0.55);
 
-  backdrop-filter: blur(5px);
+  backdrop-filter: none;
 }
 
 .modal-content {
