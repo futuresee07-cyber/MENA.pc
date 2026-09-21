@@ -1,0 +1,18 @@
+{
+  "name": "MENA",
+  "short_name": "MENA",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f5f7f6",
+  "theme_color": "#087f5b",
+  "description": "MENA — Connect, Discover and Grow",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "MENA_App_Icon_1024x1024-1.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
