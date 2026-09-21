@@ -222,11 +222,7 @@ function initializeApp() {
   setupButtons();
   setupForms();
 
-  if (getCurrentUser()) {
-    showApp();
-  } else {
-    showAuth();
-  }
+  showApp();
 
   renderAll();
 }
