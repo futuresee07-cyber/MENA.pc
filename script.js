@@ -239,12 +239,14 @@ function showPage(pageId) {
 
   qsa(".page").forEach(page => {
     page.classList.remove("active");
+     page.classList.add("hidden");
   });
 
   const page = $(pageId);
 
   if (page) {
-    page.classList.add("active");
+     page.classList.remove("hidden");
+     page.classList.add("active");
   }
 
   window.scrollTo({
