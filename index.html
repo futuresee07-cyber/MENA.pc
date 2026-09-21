@@ -2,60 +2,1142 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#087f5b">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <meta
+    name="theme-color"
+    content="#087f5b"
+  >
+
+  <meta
+    name="description"
+    content="MENA — Connect, Discover and Grow"
+  >
+
   <title>MENA</title>
+
+  <!-- MENA CSS -->
   <link rel="stylesheet" href="style.css">
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Supabase -->
+  <script
+    src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
+    defer
+  ></script>
+
+  <!-- MENA JavaScript -->
+  <script src="script.js" defer></script>
 </head>
 
 <body>
 
-<header class="topbar">
-  <button id="menuBtn">☰</button>
+  <!-- ================= HEADER ================= -->
 
-  <div class="logo">
-    <div class="logoBox">M</div>
-    <b>MENA</b>
+  <header class="topbar">
+
+    <button
+      id="menuBtn"
+      class="icon-btn"
+      aria-label="Open menu"
+    >
+      ☰
+    </button>
+
+    <div class="brand">
+      <div class="brand-logo">M</div>
+
+      <div>
+        <strong>MENA</strong>
+        <small>Connect • Discover • Grow</small>
+      </div>
+    </div>
+
+    <button
+      id="searchBtn"
+      class="icon-btn"
+      aria-label="Search"
+    >
+      🔎
+    </button>
+
+    <button
+      id="settingsBtn"
+      class="icon-btn"
+      aria-label="Settings"
+    >
+      ⚙️
+    </button>
+
+  </header>
+
+
+  <!-- ================= SEARCH ================= -->
+
+  <section
+    id="searchPanel"
+    class="panel hidden"
+  >
+
+    <div class="search-box">
+
+      <input
+        id="searchInput"
+        type="search"
+        placeholder="Search MENA..."
+        autocomplete="off"
+      >
+
+      <button id="searchSubmit">
+        Search
+      </button>
+
+    </div>
+
+    <div id="searchResults"></div>
+
+  </section>
+
+
+  <!-- ================= AUTH ================= -->
+
+  <section
+    id="authPage"
+    class="page auth-page hidden"
+  >
+
+    <div class="auth-card">
+
+      <div class="brand-logo large">
+        M
+      </div>
+
+      <h1>Welcome to MENA</h1>
+
+      <p>
+        Connect, discover and grow.
+      </p>
+
+      <form id="loginForm">
+
+        <input
+          id="loginEmail"
+          type="email"
+          placeholder="Email"
+          required
+        >
+
+        <input
+          id="loginPassword"
+          type="password"
+          placeholder="Password"
+          required
+        >
+
+        <button
+          class="primary-btn"
+          type="submit"
+        >
+          Login
+        </button>
+
+      </form>
+
+      <button
+        id="showSignup"
+        class="secondary-btn"
+      >
+        Create account
+      </button>
+
+    </div>
+
+  </section>
+
+
+  <!-- ================= SIGNUP ================= -->
+
+  <section
+    id="signupPage"
+    class="page auth-page hidden"
+  >
+
+    <div class="auth-card">
+
+      <h1>Create your MENA account</h1>
+
+      <form id="signupForm">
+
+        <input
+          id="signupUsername"
+          type="text"
+          placeholder="Username"
+          minlength="3"
+          required
+        >
+
+        <input
+          id="signupFullName"
+          type="text"
+          placeholder="Full name"
+          required
+        >
+
+        <input
+          id="signupEmail"
+          type="email"
+          placeholder="Email"
+          required
+        >
+
+        <input
+          id="signupPassword"
+          type="password"
+          placeholder="Password"
+          minlength="6"
+          required
+        >
+
+        <button
+          class="primary-btn"
+          type="submit"
+        >
+          Create account
+        </button>
+
+      </form>
+
+      <button
+        id="showLogin"
+        class="secondary-btn"
+      >
+        Back to login
+      </button>
+
+    </div>
+
+  </section>
+
+
+  <!-- ================= MAIN APP ================= -->
+
+  <main id="app" class="app hidden">
+
+
+    <!-- ================= HOME ================= -->
+
+    <section
+      id="homePage"
+      class="page"
+    >
+
+      <div class="page-heading">
+
+        <div>
+          <h2>For You</h2>
+          <p>Discover people and content on MENA.</p>
+        </div>
+
+        <button
+          id="refreshFeed"
+          class="icon-btn"
+        >
+          ↻
+        </button>
+
+      </div>
+
+
+      <!-- STORIES -->
+
+      <div class="section-title">
+        <h3>Stories</h3>
+      </div>
+
+      <div
+        id="stories"
+        class="stories"
+      >
+      </div>
+
+
+      <!-- LIVE -->
+
+      <div class="section-title">
+
+        <h3>Live Now</h3>
+
+        <button id="openLive">
+          Go Live
+        </button>
+
+      </div>
+
+      <div id="liveList"></div>
+
+
+      <!-- POSTS -->
+
+      <div class="section-title">
+        <h3>Latest posts</h3>
+      </div>
+
+      <div id="postFeed"></div>
+
+    </section>
+
+
+    <!-- ================= MARKET ================= -->
+
+    <section
+      id="marketPage"
+      class="page hidden"
+    >
+
+      <div class="page-heading">
+
+        <div>
+          <h2>Marketplace</h2>
+          <p>Buy and sell products.</p>
+        </div>
+
+        <button
+          id="newMarketPost"
+          class="primary-btn"
+        >
+          + Sell
+        </button>
+
+      </div>
+
+      <div id="marketList"></div>
+
+    </section>
+
+
+    <!-- ================= FREE WORK ================= -->
+
+    <section
+      id="workPage"
+      class="page hidden"
+    >
+
+      <div class="page-heading">
+
+        <div>
+          <h2>Free Work</h2>
+          <p>Find work opportunities and services.</p>
+        </div>
+
+        <button
+          id="newWorkPost"
+          class="primary-btn"
+        >
+          + Post Work
+        </button>
+
+      </div>
+
+      <div class="info-card">
+
+        <strong>Posting fee: 50 ETB</strong>
+
+        <p>
+          A Free Work listing costs 50 ETB to publish.
+        </p>
+
+      </div>
+
+      <div id="workList"></div>
+
+    </section>
+
+
+    <!-- ================= CREATE ================= -->
+
+    <section
+      id="createPage"
+      class="page hidden"
+    >
+
+      <div class="page-heading">
+        <h2>Create</h2>
+      </div>
+
+      <div class="create-grid">
+
+        <button
+          id="createPostBtn"
+          class="create-card"
+        >
+          <span>🎥</span>
+          <strong>Post video/photo</strong>
+          <small>Camera or gallery</small>
+        </button>
+
+        <button
+          id="createLiveBtn"
+          class="create-card"
+        >
+          <span>🔴</span>
+          <strong>Start streaming</strong>
+          <small>Camera and microphone</small>
+        </button>
+
+        <button
+          id="createMarketBtn"
+          class="create-card"
+        >
+          <span>🛍️</span>
+          <strong>Sell product</strong>
+          <small>Marketplace</small>
+        </button>
+
+        <button
+          id="createWorkBtn"
+          class="create-card"
+        >
+          <span>💼</span>
+          <strong>Post Free Work</strong>
+          <small>50 ETB posting fee</small>
+        </button>
+
+      </div>
+
+    </section>
+
+
+    <!-- ================= PROFILE ================= -->
+
+    <section
+      id="profilePage"
+      class="page hidden"
+    >
+
+      <div
+        id="profileHeader"
+        class="profile-header"
+      >
+      </div>
+
+      <div class="profile-tabs">
+
+        <button data-profile-tab="posts">
+          Posts
+        </button>
+
+        <button data-profile-tab="market">
+          Market
+        </button>
+
+        <button data-profile-tab="live">
+          Live
+        </button>
+
+      </div>
+
+      <div id="profileContent"></div>
+
+    </section>
+
+
+    <!-- ================= SETTINGS ================= -->
+
+    <section
+      id="settingsPage"
+      class="page hidden"
+    >
+
+      <div class="page-heading">
+
+        <button
+          id="settingsBack"
+          class="icon-btn"
+        >
+          ←
+        </button>
+
+        <h2>Settings</h2>
+
+      </div>
+
+
+      <div class="settings-list">
+
+        <button id="editProfileBtn">
+          👤 Edit profile
+        </button>
+
+        <button id="walletSettingsBtn">
+          💳 Wallet
+        </button>
+
+        <button id="coinShopBtn">
+          🪙 Coin shop
+        </button>
+
+        <button id="depositBtn">
+          💰 Deposit
+        </button>
+
+        <button id="withdrawBtn">
+          💸 Withdraw
+        </button>
+
+        <button id="accountSettingsBtn">
+          🔐 Account
+        </button>
+
+        <button id="logoutBtn">
+          🚪 Log out
+        </button>
+
+      </div>
+
+    </section>
+
+
+    <!-- ================= WALLET ================= -->
+
+    <section
+      id="walletPage"
+      class="page hidden"
+    >
+
+      <div class="page-heading">
+
+        <button
+          class="backBtn icon-btn"
+          data-back="settingsPage"
+        >
+          ←
+        </button>
+
+        <h2>Wallet</h2>
+
+      </div>
+
+      <div
+        id="walletBalance"
+        class="wallet-card"
+      >
+      </div>
+
+      <div class="wallet-actions">
+
+        <button id="walletDeposit">
+          💰 Deposit
+        </button>
+
+        <button id="walletWithdraw">
+          💸 Withdraw
+        </button>
+
+        <button id="walletConnect">
+          🔗 Connect wallet
+        </button>
+
+      </div>
+
+    </section>
+
+
+    <!-- ================= COIN SHOP ================= -->
+
+    <section
+      id="coinPage"
+      class="page hidden"
+    >
+
+      <div class="page-heading">
+
+        <button
+          class="backBtn icon-btn"
+          data-back="settingsPage"
+        >
+          ←
+        </button>
+
+        <h2>Coin Shop</h2>
+
+      </div>
+
+      <div id="coinBalance"></div>
+
+      <div id="coinPackages"></div>
+
+    </section>
+
+
+    <!-- ================= DEPOSIT ================= -->
+
+    <section
+      id="depositPage"
+      class="page hidden"
+    >
+
+      <div class="page-heading">
+
+        <button
+          class="backBtn icon-btn"
+          data-back="walletPage"
+        >
+          ←
+        </button>
+
+        <h2>Deposit</h2>
+
+      </div>
+
+      <div class="payment-methods">
+
+        <button
+          data-payment="telebirr"
+          class="payment-method"
+        >
+          <strong>Telebirr</strong>
+          <small>Deposit with Telebirr</small>
+        </button>
+
+        <button
+          data-payment="mpesa"
+          class="payment-method"
+        >
+          <strong>M-Pesa</strong>
+          <small>Deposit with M-Pesa</small>
+        </button>
+
+      </div>
+
+      <form id="depositForm">
+
+        <input
+          id="depositAmount"
+          type="number"
+          min="1"
+          step="0.01"
+          placeholder="Amount in ETB"
+          required
+        >
+
+        <input
+          id="depositReference"
+          type="text"
+          placeholder="Transaction/reference number"
+          required
+        >
+
+        <button
+          class="primary-btn"
+          type="submit"
+        >
+          Submit deposit
+        </button>
+
+      </form>
+
+    </section>
+
+
+    <!-- ================= WITHDRAW ================= -->
+
+    <section
+      id="withdrawPage"
+      class="page hidden"
+    >
+
+      <div class="page-heading">
+
+        <button
+          class="backBtn icon-btn"
+          data-back="walletPage"
+        >
+          ←
+        </button>
+
+        <h2>Withdraw</h2>
+
+      </div>
+
+      <div class="info-card">
+
+        Minimum withdrawal:
+
+        <strong>10 ETB</strong>
+
+      </div>
+
+      <div class="payment-methods">
+
+        <button
+          data-withdraw-method="telebirr"
+          class="payment-method"
+        >
+          Telebirr
+        </button>
+
+        <button
+          data-withdraw-method="mpesa"
+          class="payment-method"
+        >
+          M-Pesa
+        </button>
+
+      </div>
+
+      <form id="withdrawForm">
+
+        <input
+          id="withdrawAmount"
+          type="number"
+          min="10"
+          step="0.01"
+          placeholder="Amount in ETB"
+          required
+        >
+
+        <input
+          id="withdrawNumber"
+          type="tel"
+          placeholder="Telebirr / M-Pesa number"
+          required
+        >
+
+        <input
+          id="withdrawName"
+          type="text"
+          placeholder="Account name"
+          required
+        >
+
+        <button
+          class="primary-btn"
+          type="submit"
+        >
+          Request withdrawal
+        </button>
+
+      </form>
+
+    </section>
+
+
+    <!-- ================= EDIT PROFILE ================= -->
+
+    <section
+      id="editProfilePage"
+      class="page hidden"
+    >
+
+      <div class="page-heading">
+
+        <button
+          class="backBtn icon-btn"
+          data-back="profilePage"
+        >
+          ←
+        </button>
+
+        <h2>Edit profile</h2>
+
+      </div>
+
+      <form id="editProfileForm">
+
+        <label>
+          Username
+          <input
+            id="editUsername"
+            type="text"
+            required
+          >
+        </label>
+
+        <label>
+          Full name
+          <input
+            id="editFullName"
+            type="text"
+          >
+        </label>
+
+        <label>
+          Bio
+          <textarea
+            id="editBio"
+            rows="4"
+          ></textarea>
+        </label>
+
+        <label>
+          Profile photo
+          <input
+            id="editAvatar"
+            type="file"
+            accept="image/*"
+          >
+        </label>
+
+        <button
+          class="primary-btn"
+          type="submit"
+        >
+          Save profile
+        </button>
+
+      </form>
+
+    </section>
+
+
+    <!-- ================= CREATE POST ================= -->
+
+    <section
+      id="postCreatePage"
+      class="page hidden"
+    >
+
+      <div class="page-heading">
+
+        <button
+          class="backBtn icon-btn"
+          data-back="createPage"
+        >
+          ←
+        </button>
+
+        <h2>Create post</h2>
+
+      </div>
+
+      <form id="postForm">
+
+        <label class="upload-box">
+
+          <span>📷</span>
+
+          <strong>
+            Choose photo or video
+          </strong>
+
+          <small>
+            Camera or gallery
+          </small>
+
+          <input
+            id="postMedia"
+            type="file"
+            accept="image/*,video/*"
+            capture="environment"
+            required
+          >
+
+        </label>
+
+        <textarea
+          id="postCaption"
+          placeholder="Write a caption..."
+          maxlength="2000"
+        ></textarea>
+
+        <button
+          class="primary-btn"
+          type="submit"
+        >
+          Publish post
+        </button>
+
+      </form>
+
+    </section>
+
+
+    <!-- ================= LIVE ================= -->
+
+    <section
+      id="livePage"
+      class="page hidden"
+    >
+
+      <div class="page-heading">
+
+        <button
+          class="backBtn icon-btn"
+          data-back="createPage"
+        >
+          ←
+        </button>
+
+        <h2>Start Live</h2>
+
+      </div>
+
+      <form id="liveForm">
+
+        <input
+          id="streamName"
+          type="text"
+          placeholder="Stream name"
+          maxlength="100"
+          required
+        >
+
+        <button
+          class="primary-btn"
+          type="submit"
+        >
+          Continue
+        </button>
+
+      </form>
+
+    </section>
+
+
+    <!-- ================= MARKET CREATE ================= -->
+
+    <section
+      id="marketCreatePage"
+      class="page hidden"
+    >
+
+      <div class="page-heading">
+
+        <button
+          class="backBtn icon-btn"
+          data-back="marketPage"
+        >
+          ←
+        </button>
+
+        <h2>Sell product</h2>
+
+      </div>
+
+      <div class="info-card">
+
+        <strong>Posting fee: 50 ETB</strong>
+
+      </div>
+
+      <form id="marketForm">
+
+        <input
+          id="marketTitle"
+          type="text"
+          placeholder="Product name"
+          required
+        >
+
+        <textarea
+          id="marketDescription"
+          placeholder="Product description"
+        ></textarea>
+
+        <input
+          id="marketPrice"
+          type="number"
+          min="0"
+          step="0.01"
+          placeholder="Price in ETB"
+          required
+        >
+
+        <input
+          id="marketPhone"
+          type="tel"
+          placeholder="Seller phone"
+        >
+
+        <input
+          id="marketLocation"
+          type="text"
+          placeholder="Location"
+        >
+
+        <input
+          id="marketImage"
+          type="file"
+          accept="image/*"
+        >
+
+        <button
+          class="primary-btn"
+          type="submit"
+        >
+          Continue to payment
+        </button>
+
+      </form>
+
+    </section>
+
+
+    <!-- ================= WORK CREATE ================= -->
+
+    <section
+      id="workCreatePage"
+      class="page hidden"
+    >
+
+      <div class="page-heading">
+
+        <button
+          class="backBtn icon-btn"
+          data-back="workPage"
+        >
+          ←
+        </button>
+
+        <h2>Post Free Work</h2>
+
+      </div>
+
+      <div class="info-card">
+
+        <strong>Posting fee: 50 ETB</strong>
+
+        <p>
+          Your listing will be published after the
+          posting fee is successfully paid.
+        </p>
+
+      </div>
+
+      <form id="workForm">
+
+        <input
+          id="workTitle"
+          type="text"
+          placeholder="Work title"
+          required
+        >
+
+        <textarea
+          id="workDescription"
+          placeholder="Describe the work..."
+          required
+        ></textarea>
+
+        <input
+          id="workCategory"
+          type="text"
+          placeholder="Category"
+        >
+
+        <input
+          id="workContact"
+          type="text"
+          placeholder="Contact information"
+        >
+
+        <input
+          id="workMaterial"
+          type="number"
+          min="0"
+          step="0.01"
+          placeholder="Material amount (ETB)"
+        >
+
+        <button
+          class="primary-btn"
+          type="submit"
+        >
+          Continue to payment
+        </button>
+
+      </form>
+
+    </section>
+
+  </main>
+
+
+  <!-- ================= BOTTOM NAV ================= -->
+
+  <nav
+    id="bottomNav"
+    class="bottom-nav hidden"
+  >
+
+    <button
+      data-page="homePage"
+      class="nav-btn active"
+    >
+      <span>⌂</span>
+      <small>Home</small>
+    </button>
+
+    <button
+      data-page="marketPage"
+      class="nav-btn"
+    >
+      <span>🛍️</span>
+      <small>Market</small>
+    </button>
+
+    <button
+      data-page="createPage"
+      class="nav-btn create-nav"
+    >
+      <span>＋</span>
+    </button>
+
+    <button
+      data-page="workPage"
+      class="nav-btn"
+    >
+      <span>💼</span>
+      <small>Work</small>
+    </button>
+
+    <button
+      data-page="profilePage"
+      class="nav-btn"
+    >
+      <span>👤</span>
+      <small>Profile</small>
+    </button>
+
+  </nav>
+
+
+  <!-- ================= MODAL ================= -->
+
+  <div
+    id="modal"
+    class="modal hidden"
+  >
+
+    <div class="modal-content">
+
+      <button
+        id="closeModal"
+        class="modal-close"
+      >
+        ×
+      </button>
+
+      <div id="modalBody"></div>
+
+    </div>
+
   </div>
 
-  <button id="settingsBtn">⚙</button>
-</header>
 
-<main id="app"></main>
+  <!-- ================= TOAST ================= -->
 
-<nav class="bottomNav">
-
-  <button class="nav active" data-page="home">
-    <span>⌂</span>
-    Home
-  </button>
-
-  <button class="nav" data-page="market">
-    <span>🛍</span>
-    Market
-  </button>
-
-  <button id="createBtn" class="createBtn">
-    +
-  </button>
-
-  <button class="nav" data-page="work">
-    <span>💼</span>
-    Work
-  </button>
-
-  <button class="nav" data-page="profile">
-    <span>👤</span>
-    Profile
-  </button>
-
-</nav>
-
-<div id="modal"></div>
-
-<div id="toast"></div>
-
-<script src="script.js"></script>
+  <div
+    id="toast"
+    class="toast"
+  >
+  </div>
 
 </body>
 </html>
