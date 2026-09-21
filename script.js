@@ -13,12 +13,13 @@ const APP = {
   version: "1.0.0",
   coinValue: 0.5,
   withdrawalMinimum: 10,
-  marketPostFee: 100,
-  freeWorkPostFee: 100,
+  marketPostFee: 0,
+  freeWorkPostFee: 50,
   giftPlatformPercent: 30,
   workPlatformPercent: 5
 };
-
+const SUPABASE_URL = "https://ryywkqyeoftuejczeqgg.supabase.co/rest/v1/";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_E6S3EtoGbEqA_XkRpJhYpA_g8SvjMeH";
 const gifts = [
   ["🌹", "Rose", 1],
   ["❤️", "Heart", 5],
