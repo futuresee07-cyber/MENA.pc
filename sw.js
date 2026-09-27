@@ -1,4 +1,4 @@
-const CACHE_NAME = "mena-v5-gradient";
+const CACHE_NAME = "mena-v4";
 
 const APP_FILES = [
   "./",
@@ -24,7 +24,6 @@ self.addEventListener(
     );
 
     self.skipWaiting();
-
   }
 );
 
@@ -46,7 +45,6 @@ self.addEventListener(
                 key =>
                   key !== CACHE_NAME
               )
-
               .map(
                 key =>
                   caches.delete(key)
@@ -59,7 +57,6 @@ self.addEventListener(
     );
 
     self.clients.claim();
-
   }
 );
 
@@ -86,21 +83,23 @@ self.addEventListener(
 
           caches
             .open(CACHE_NAME)
-            .then(cache =>
+            .then(cache => {
+
               cache.put(
                 event.request,
                 copy
-              )
-            );
+              );
+
+            });
 
           return response;
-
         })
 
-        .catch(() =>
-          caches.match(
-            event.request
-          )
+        .catch(
+          () =>
+            caches.match(
+              event.request
+            )
         )
 
     );
