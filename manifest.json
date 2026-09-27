@@ -1,18 +1,23 @@
 {
   "name": "MENA",
   "short_name": "MENA",
+  "description": "MENA — Connect, Discover, Buy, Sell and Grow",
   "start_url": "./",
+  "scope": "./",
   "display": "standalone",
-  "background_color": "#f5f7f6",
-  "theme_color": "#087f5b",
-  "description": "MENA — Connect, Discover and Grow",
   "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#087f5b",
   "icons": [
     {
-      "src": "MENA_App_Icon_1024x1024-1.png",
-      "sizes": "1024x1024",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
     }
   ]
 }
