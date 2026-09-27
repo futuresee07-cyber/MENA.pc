@@ -112,7 +112,316 @@ supabaseClient.auth.onAuthStateChange(
 /* =========================================================
    PROFILE
    ========================================================= */
+async function renderProfile() {
 
+  /* ---------------- GUEST PROFILE ---------------- */
+
+  if (!currentUser) {
+
+    main.innerHTML = `
+
+      <section class="page">
+
+        <div class="gradient-hero">
+
+          <h1>MENA Profile</h1>
+
+          <p>
+            Browse MENA freely.
+            Sign up only when you want to post,
+            withdraw, buy coins, sell or use your wallet.
+          </p>
+
+        </div>
+
+
+        <!-- WALLET / MONEY BUTTONS -->
+
+        <div class="action-grid">
+
+          <button
+            class="action-card"
+            onclick="requireAccount('coins', openWallet)"
+          >
+            <strong>💰 Wallet</strong>
+            <small>
+              Balance and earnings
+            </small>
+          </button>
+
+
+          <button
+            class="action-card"
+            onclick="requireAccount('coins', openBuyCoins)"
+          >
+            <strong>🪙 Buy Coins</strong>
+            <small>
+              1 coin = 0.50 ETB
+            </small>
+          </button>
+
+
+          <button
+            class="action-card"
+            onclick="requireAccount('withdraw', openWithdraw)"
+          >
+            <strong>💸 Withdraw</strong>
+            <small>
+              Minimum 10 ETB
+            </small>
+          </button>
+
+
+          <button
+            class="action-card"
+            onclick="requireAccount('coins', openExchange)"
+          >
+            <strong>🔄 Exchange into Coin</strong>
+            <small>
+              ETB → Coins
+            </small>
+          </button>
+
+
+          <button
+            class="action-card"
+            onclick="showPage('market')"
+          >
+            <strong>🛍 My Market</strong>
+            <small>
+              Buy and sell products
+            </small>
+          </button>
+
+
+          <button
+            class="action-card"
+            onclick="showPage('market')"
+          >
+            <strong>💼 Free Work</strong>
+            <small>
+              Find and post work
+            </small>
+          </button>
+
+        </div>
+
+
+        <div
+          class="empty"
+          style="margin-top:15px"
+        >
+
+          <div class="empty-icon">
+            👤
+          </div>
+
+          <h3>
+            You are browsing as a guest
+          </h3>
+
+          <p class="muted">
+            You don't need an account to browse MENA.
+            Sign up when you want to use account features.
+          </p>
+
+          <button
+            class="primary-btn"
+            style="margin-top:15px"
+            onclick="openAuth('signup')"
+          >
+            Create MENA Account
+          </button>
+
+        </div>
+
+      </section>
+
+    `;
+
+    return;
+  }
+
+
+  /* ---------------- LOGGED-IN PROFILE ---------------- */
+
+  const avatar =
+    currentProfile?.avatar_url || "";
+
+  const name =
+    currentProfile?.display_name ||
+    currentProfile?.username ||
+    "MENA user";
+
+  const username =
+    currentProfile?.username ||
+    "";
+
+
+  main.innerHTML = `
+
+    <section class="page">
+
+      <!-- PROFILE HEADER -->
+
+      <div class="profile-cover">
+
+        <div class="profile-main">
+
+          ${
+            avatar
+            ?
+            `<img
+              class="profile-avatar"
+              src="${escapeAttr(avatar)}"
+              alt=""
+            >`
+            :
+            `<div class="profile-avatar"></div>`
+          }
+
+          <div>
+
+            <div class="profile-name">
+              ${escapeHTML(name)}
+            </div>
+
+            <div class="profile-handle">
+              @${escapeHTML(username)}
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <div class="profile-stats">
+
+          <div class="profile-stat">
+            <strong>—</strong>
+            <small>Posts</small>
+          </div>
+
+          <div class="profile-stat">
+            <strong>—</strong>
+            <small>Followers</small>
+          </div>
+
+          <div class="profile-stat">
+            <strong>—</strong>
+            <small>Following</small>
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- WALLET / MONEY BUTTONS -->
+
+      <div class="action-grid">
+
+        <button
+          class="action-card"
+          onclick="openWallet()"
+        >
+          <strong>💰 Wallet</strong>
+          <small>
+            Balance and earnings
+          </small>
+        </button>
+
+
+        <button
+          class="action-card"
+          onclick="openBuyCoins()"
+        >
+          <strong>🪙 Buy Coins</strong>
+          <small>
+            1 coin = 0.50 ETB
+          </small>
+        </button>
+
+
+        <button
+          class="action-card"
+          onclick="openWithdraw()"
+        >
+          <strong>💸 Withdraw</strong>
+          <small>
+            Minimum 10 ETB
+          </small>
+        </button>
+
+
+        <button
+          class="action-card"
+          onclick="openExchange()"
+        >
+          <strong>🔄 Exchange into Coin</strong>
+          <small>
+            Convert ETB to coins
+          </small>
+        </button>
+
+
+        <button
+          class="action-card"
+          onclick="showPage('market')"
+        >
+          <strong>🛍 My Market</strong>
+          <small>
+            Buy and sell products
+          </small>
+        </button>
+
+
+        <button
+          class="action-card"
+          onclick="showPage('market')"
+        >
+          <strong>💼 Free Work</strong>
+          <small>
+            Work opportunities
+          </small>
+        </button>
+
+      </div>
+
+
+      <!-- POST -->
+
+      <button
+        class="primary-btn"
+        style="margin-top:15px"
+        onclick="openCreatePost()"
+      >
+        ＋ Create Post
+      </button>
+
+
+      <!-- LOGOUT -->
+
+      <button
+        class="primary-btn"
+        style="
+          margin-top:10px;
+          background:linear-gradient(
+            110deg,
+            #ef4444,
+            #ff7b54
+          );
+        "
+        onclick="logout()"
+      >
+        Log out
+      </button>
+
+    </section>
+
+  `;
+
+}
 async function loadProfile() {
 
   if (!currentUser) return;
