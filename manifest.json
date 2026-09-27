@@ -1,13 +1,18 @@
 {
   "name": "MENA",
   "short_name": "MENA",
-  "description": "MENA — Social, Marketplace and Free Work",
+  "description": "MENA — Connect, Create, Buy, Sell and Grow",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#f8fbfa",
+  "background_color": "#f5f8fc",
   "theme_color": "#087f5b",
+  "categories": [
+    "social",
+    "shopping",
+    "business"
+  ],
   "icons": [
     {
       "src": "icon-192.png",
