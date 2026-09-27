@@ -112,7 +112,7 @@ supabaseClient.auth.onAuthStateChange(
 /* =========================================================
    PROFILE
    ========================================================= */
-async function renderProfile() {
+      async function renderProfile() {
 
   /* ---------------- GUEST PROFILE ---------------- */
 
@@ -421,29 +421,7 @@ async function renderProfile() {
 
   `;
 
-}
-async function loadProfile() {
-
-  if (!currentUser) return;
-
-  const {
-    data,
-    error
-  } = await supabaseClient
-    .from("profiles")
-    .select("*")
-    .eq("id", currentUser.id)
-    .maybeSingle();
-
-  if (error) {
-    console.error(error);
-    return;
-  }
-
-  currentProfile = data;
-}
-
-
+}  
 /* =========================================================
    NAVIGATION
    ========================================================= */
