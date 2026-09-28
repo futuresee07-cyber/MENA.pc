@@ -1,0 +1,12 @@
+{
+  "name": "MENA",
+  "short_name": "MENA",
+  "description": "MENA - Social, Marketplace, Work and Wallet",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f6f8fb",
+  "theme_color": "#087f5b",
+  "lang": "en"
+}
