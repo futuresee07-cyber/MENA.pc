@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
+  >
+
+  <meta name="theme-color" content="#087f5b">
+  <meta
+    name="description"
+    content="MENA - Social, Marketplace, Work and Wallet"
+  >
+
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css">
+
+  <title>MENA</title>
+
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body>
+
+  <div id="toastRoot"></div>
+
+  <!-- TOP BAR -->
+  <header class="topbar">
+
+    <button
+      class="brand"
+      onclick="showPage('home')"
+      type="button"
+    >
+      <span class="brand-logo">M</span>
+      <span class="brand-name">MENA</span>
+    </button>
+
+    <div class="top-actions">
+
+      <button
+        class="top-icon"
+        onclick="openSearch()"
+        type="button"
+        aria-label="Search"
+      >
+        🔍
+      </button>
+
+      <button
+        class="top-icon"
+        onclick="openSettings()"
+        type="button"
+        aria-label="Settings"
+      >
+        ⚙️
+      </button>
+
+    </div>
+
+  </header>
+
+
+  <!-- APP -->
+  <main id="app"></main>
+
+
+  <!-- BOTTOM NAVIGATION -->
+  <nav class="bottom-nav">
+
+    <button
+      id="nav-home"
+      class="nav-item active"
+      onclick="showPage('home')"
+      type="button"
+    >
+      <span>⌂</span>
+      <small>Home</small>
+    </button>
+
+    <button
+      id="nav-market"
+      class="nav-item"
+      onclick="showPage('market')"
+      type="button"
+    >
+      <span>🛍️</span>
+      <small>Marketplace</small>
+    </button>
+
+    <button
+      id="nav-create"
+      class="nav-create"
+      onclick="openCreateMenu()"
+      type="button"
+    >
+      +
+    </button>
+
+    <button
+      id="nav-inbox"
+      class="nav-item"
+      onclick="showPage('inbox')"
+      type="button"
+    >
+      <span>✉️</span>
+      <small>Inbox</small>
+    </button>
+
+    <button
+      id="nav-profile"
+      class="nav-item"
+      onclick="showPage('profile')"
+      type="button"
+    >
+      <span>◯</span>
+      <small>Profile</small>
+    </button>
+
+  </nav>
+
+
+  <!-- MEDIA INPUT -->
+  <input
+    id="mediaInput"
+    type="file"
+    accept="image/*,video/*"
+    capture="environment"
+    hidden
+  >
+
+  <!-- AVATAR INPUT -->
+  <input
+    id="avatarInput"
+    type="file"
+    accept="image/*"
+    hidden
+  >
+
+
+  <!-- MODAL -->
+  <div
+    id="modal"
+    class="modal hidden"
+    onclick="modalOutside(event)"
+  ></div>
+
+
+  <script src="script.js"></script>
+
+</body>
+</html>
